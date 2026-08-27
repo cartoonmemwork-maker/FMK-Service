@@ -64,8 +64,12 @@ function App() {
     <div className="site-shell">
       <header className="site-header">
         <a className="brand" href="#inicio" aria-label="FMK Service, inicio">
-          <img src="/fmk-service-logo.png" alt="FMK Service" width="720" height="720" />
-          <span>FMK Service</span>
+          <img
+            src="/fmk-service-wordmark.png"
+            alt="FMK Service"
+            width="564"
+            height="272"
+          />
         </a>
 
         <nav className="desktop-nav" aria-label="Navegación principal">
@@ -100,7 +104,7 @@ function App() {
 
           <div className="hero-mark" aria-hidden="true">
             <div className="hero-orbit" />
-            <img src="/fmk-service-logo.png" alt="" width="720" height="720" />
+            <img src="/fmk-service-wordmark.png" alt="" width="564" height="272" />
             <span className="hero-label hero-label-top">Diagnóstico preciso</span>
             <span className="hero-label hero-label-bottom">Reparación profesional</span>
           </div>
@@ -252,8 +256,7 @@ function App() {
 
       <footer className="site-footer">
         <a className="brand footer-brand" href="#inicio">
-          <img src="/fmk-service-logo.png" alt="" width="720" height="720" />
-          <span>FMK Service</span>
+          <img src="/fmk-service-wordmark.png" alt="FMK Service" width="564" height="272" />
         </a>
         <p>Servicio técnico · San Martín</p>
         <a href={instagramUrl} target="_blank" rel="noreferrer">Instagram <ArrowIcon /></a>
