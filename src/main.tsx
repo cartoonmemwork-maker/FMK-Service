@@ -47,6 +47,14 @@ const steps = [
   ['Probás', 'Verificamos el funcionamiento antes de la entrega.'],
 ];
 
+const supportedBrands = [
+  { name: 'Apple', src: '/brands/apple.png', width: 320, height: 320 },
+  { name: 'Samsung', src: '/brands/samsung.png', width: 630, height: 320 },
+  { name: 'Motorola', src: '/brands/motorola.png', width: 320, height: 320 },
+  { name: 'LG', src: '/brands/lg.png', width: 630, height: 320 },
+  { name: 'Android', src: '/brands/android.png', width: 1024, height: 640 },
+];
+
 function ArrowIcon() {
   return <span aria-hidden="true">↗</span>;
 }
@@ -114,6 +122,26 @@ function App() {
           <div>
             <strong>Todos los días</strong>
             <span>Consultá disponibilidad</span>
+          </div>
+        </section>
+
+        <section className="brands-strip" aria-labelledby="brands-title">
+          <div>
+            <p className="eyebrow">Servicio multimarca</p>
+            <h2 id="brands-title">Reparamos equipos de todas las marcas.</h2>
+          </div>
+          <div className="brand-logos">
+            {supportedBrands.map((brand) => (
+              <img
+                key={brand.name}
+                src={brand.src}
+                alt={brand.name}
+                width={brand.width}
+                height={brand.height}
+                loading="lazy"
+                decoding="async"
+              />
+            ))}
           </div>
         </section>
 
