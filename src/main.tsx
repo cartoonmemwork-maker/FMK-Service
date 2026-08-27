@@ -36,7 +36,7 @@ function App() {
             </div>
             <div>
               <dt>Publicación</dt>
-              <dd>Cloudflare Pages</dd>
+              <dd>Cloudflare Workers</dd>
             </div>
           </dl>
         </section>
