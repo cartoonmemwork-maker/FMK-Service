@@ -29,4 +29,3 @@ El proyecto queda preparado para conectarse desde **Workers & Pages → Create �
 - Versión de Node: `22.13.0`
 
 `wrangler.jsonc` mantiene la configuración de Pages versionada junto con el código. No deben guardarse tokens ni secretos en el repositorio.
-
