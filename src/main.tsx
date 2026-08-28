@@ -280,8 +280,10 @@ function ShareIcon({ copied }: { copied: boolean }) {
 
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path d="M12 15V3m0 0L8 7m4-4 4 4" />
-      <path d="M8 10H7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-1" />
+      <circle cx="18" cy="5" r="2.25" />
+      <circle cx="6" cy="12" r="2.25" />
+      <circle cx="18" cy="19" r="2.25" />
+      <path d="m8 11 7.9-4.6M8 13l7.9 4.6" />
     </svg>
   );
 }
@@ -578,7 +580,7 @@ function App() {
             <div>
               <span>Contacto</span>
               <strong>11 3319-0913</strong>
-              <p>Atención todos los días</p>
+              <p>Lunes a viernes · 10 a 19 h</p>
               <a className="instagram-link" href={instagramUrl} target="_blank" rel="noreferrer" onClick={() => trackAction('contact_instagram')}>
                 <img src="/instagram.png" alt="" width="250" height="249" />
                 @fmkservice.ok
