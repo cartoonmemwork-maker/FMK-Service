@@ -1,4 +1,5 @@
-import { StrictMode } from 'react';
+import { StrictMode, useRef, useState } from 'react';
+import type { KeyboardEvent, PointerEvent } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
 
@@ -60,35 +61,200 @@ const supportedBrands = [
   { name: 'Android', src: '/brands/android.png', width: 1024, height: 640 },
 ];
 
-const workshopPhotos = [
+type WorkshopSlide = {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+  objectPosition?: string;
+};
+
+type WorkshopCarousel = {
+  title: string;
+  copy: string;
+  className?: string;
+  slides: WorkshopSlide[];
+};
+
+const workshopCarousels: WorkshopCarousel[] = [
   {
-    src: '/work/iphone-repair.webp',
-    alt: 'iPhone abierto durante una reparación interna en el taller de FMK Service',
     title: 'Trabajo interno',
     copy: 'Diagnóstico y reemplazo de componentes.',
-    width: 900,
-    height: 1600,
     className: 'work-card-iphone',
+    slides: [
+      {
+        src: '/work/iphone-repair.webp',
+        alt: 'iPhone abierto durante una reparación interna en el taller de FMK Service',
+        width: 900,
+        height: 1600,
+        objectPosition: '50% 66%',
+      },
+      {
+        src: '/work/internal-iphone-open.webp',
+        alt: 'iPhone abierto con sus componentes internos expuestos para diagnóstico',
+        width: 1200,
+        height: 1600,
+      },
+      {
+        src: '/work/internal-android-board.webp',
+        alt: 'Celular Android desarmado para reemplazar batería y revisar sus componentes',
+        width: 1200,
+        height: 1600,
+      },
+    ],
   },
   {
-    src: '/work/foldable-repair.webp',
-    alt: 'Celulares plegables Motorola durante una reparación en FMK Service',
     title: 'Equipos multimarca',
     copy: 'También trabajamos con equipos plegables.',
-    width: 1200,
-    height: 1600,
-    className: '',
+    slides: [
+      {
+        src: '/work/foldable-repair.webp',
+        alt: 'Celulares plegables Motorola durante una reparación en FMK Service',
+        width: 1200,
+        height: 1600,
+      },
+      {
+        src: '/work/multibrand-samsung.webp',
+        alt: 'Celular Samsung revisado con equipamiento profesional en FMK Service',
+        width: 1200,
+        height: 1600,
+      },
+      {
+        src: '/work/multibrand-iphone.webp',
+        alt: 'iPhone reparado y listo para las pruebas finales en el taller',
+        width: 1200,
+        height: 1600,
+      },
+    ],
   },
   {
-    src: '/work/microsoldering-bga.webp',
-    alt: 'Componente electrónico BGA preparado para un trabajo de microsoldadura en FMK Service',
     title: 'Microsoldadura',
     copy: 'Precisión para fallas a nivel placa.',
-    width: 1200,
-    height: 1600,
-    className: '',
+    slides: [
+      {
+        src: '/work/microsoldering-bga.webp',
+        alt: 'Componente electrónico BGA preparado para un trabajo de microsoldadura en FMK Service',
+        width: 1200,
+        height: 1600,
+      },
+      {
+        src: '/work/microsoldering-board.webp',
+        alt: 'Placa electrónica preparada para microsoldadura y reballing de un componente BGA',
+        width: 1200,
+        height: 1600,
+      },
+      {
+        src: '/work/microsoldering-connector.webp',
+        alt: 'Conector interno de precisión reparado mediante microsoldadura',
+        width: 1200,
+        height: 1600,
+      },
+    ],
   },
 ];
+
+function WorkCarousel({ carousel }: { carousel: WorkshopCarousel }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const pointerStart = useRef<{ id: number; x: number; y: number } | null>(null);
+  const suppressClick = useRef(false);
+  const imageRequest = useRef(0);
+  const activeSlide = carousel.slides[activeIndex];
+
+  const showSlide = (nextIndex: number) => {
+    const normalizedIndex =
+      (nextIndex + carousel.slides.length) % carousel.slides.length;
+    const requestId = imageRequest.current + 1;
+    const nextImage = new Image();
+
+    imageRequest.current = requestId;
+    nextImage.onload = nextImage.onerror = () => {
+      if (imageRequest.current === requestId) {
+        setActiveIndex(normalizedIndex);
+      }
+    };
+    nextImage.src = carousel.slides[normalizedIndex].src;
+  };
+
+  const showRelativeSlide = (offset: number) => {
+    showSlide(activeIndex + offset);
+  };
+
+  const handlePointerDown = (event: PointerEvent<HTMLButtonElement>) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+
+    suppressClick.current = false;
+    pointerStart.current = {
+      id: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handlePointerUp = (event: PointerEvent<HTMLButtonElement>) => {
+    const start = pointerStart.current;
+
+    if (!start || start.id !== event.pointerId) return;
+
+    const deltaX = event.clientX - start.x;
+    const deltaY = event.clientY - start.y;
+    const moved = Math.abs(deltaX) > 8 || Math.abs(deltaY) > 8;
+
+    pointerStart.current = null;
+    suppressClick.current = moved;
+
+    if (Math.abs(deltaX) > 35 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      showRelativeSlide(deltaX < 0 ? 1 : -1);
+    }
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+
+    event.preventDefault();
+    showRelativeSlide(event.key === 'ArrowRight' ? 1 : -1);
+  };
+
+  return (
+    <article className={`work-card ${carousel.className ?? ''}`}>
+      <button
+        className="work-card-control"
+        type="button"
+        aria-label={`${carousel.title}. Foto ${activeIndex + 1} de ${carousel.slides.length}: ${activeSlide.alt}. Tocá, hacé clic o deslizá para cambiar.`}
+        onClick={() => {
+          if (suppressClick.current) {
+            suppressClick.current = false;
+            return;
+          }
+          showRelativeSlide(1);
+        }}
+        onKeyDown={handleKeyDown}
+        onPointerCancel={() => {
+          pointerStart.current = null;
+          suppressClick.current = true;
+        }}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+      >
+        <img
+          key={activeSlide.src}
+          src={activeSlide.src}
+          alt={activeSlide.alt}
+          width={activeSlide.width}
+          height={activeSlide.height}
+          loading="lazy"
+          decoding="async"
+          draggable="false"
+          style={{ objectPosition: activeSlide.objectPosition }}
+        />
+      </button>
+      <div className="work-card-caption">
+        <h3>{carousel.title}</h3>
+        <p>{carousel.copy}</p>
+      </div>
+    </article>
+  );
+}
 
 function ArrowIcon() {
   return <span aria-hidden="true">↗</span>;
@@ -213,21 +379,8 @@ function App() {
           </div>
 
           <div className="work-gallery">
-            {workshopPhotos.map((photo) => (
-              <figure className={`work-card ${photo.className}`} key={photo.src}>
-                <img
-                  src={photo.src}
-                  alt={photo.alt}
-                  width={photo.width}
-                  height={photo.height}
-                  loading="lazy"
-                  decoding="async"
-                />
-                <figcaption>
-                  <h3>{photo.title}</h3>
-                  <p>{photo.copy}</p>
-                </figcaption>
-              </figure>
+            {workshopCarousels.map((carousel) => (
+              <WorkCarousel carousel={carousel} key={carousel.title} />
             ))}
           </div>
         </section>
