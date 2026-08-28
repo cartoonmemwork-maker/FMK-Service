@@ -70,7 +70,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .button-secondary { border-color: var(--line); background: #fff; }
 .button-icon { width: 1.15rem; height: 1.15rem; flex: 0 0 auto; object-fit: contain; }
 .button-icon-only { width: 3.15rem; padding: 0; }
-.instagram-blue-icon { width: 1.2rem; height: 1.2rem; flex: 0 0 auto; background: var(--blue); -webkit-mask: url('/instagram.png') center / contain no-repeat; mask: url('/instagram.png') center / contain no-repeat; }
+.button-icon-only img { width: 1.25rem; height: 1.25rem; object-fit: contain; }
 
 .hero-mark { position: relative; display: grid; aspect-ratio: 1; place-items: center; border-radius: 50%; background: radial-gradient(circle at 50% 45%, #fff 0 27%, #f7f7f9 58%, #e9e9ed 100%); }
 .hero-mark img { position: relative; z-index: 2; width: 63%; height: auto; object-fit: contain; filter: drop-shadow(0 1.5rem 2rem rgb(0 0 0 / 12%)); }

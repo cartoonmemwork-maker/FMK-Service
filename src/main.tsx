@@ -7,7 +7,7 @@ const whatsappUrl =
   'https://wa.me/5491133190913?text=Hola%20FMK%20Service%2C%20quiero%20consultar%20por%20una%20reparaci%C3%B3n.';
 const mapsUrl = 'https://maps.app.goo.gl/j4KGtbFLW4RRRVRo7';
 const instagramUrl = 'https://www.instagram.com/fmkservice.ok/';
-const shareDomain = 'fmkservice.ar';
+const shareDomain = 'https://fmkservice.ar/';
 
 type ZarazApi = {
   track: (eventName: string, properties?: Record<string, string>) => Promise<void> | void;
@@ -280,14 +280,10 @@ function ShareIcon({ copied }: { copied: boolean }) {
 
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path d="M12 16V3m0 0L7 8m5-5 5 5" />
-      <path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />
+      <rect x="8" y="8" width="11" height="11" rx="2" />
+      <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
     </svg>
   );
-}
-
-function InstagramIcon() {
-  return <span className="instagram-blue-icon" aria-hidden="true" />;
 }
 
 function App() {
@@ -342,7 +338,7 @@ function App() {
             className={`header-share ${shareCopied ? 'is-copied' : ''}`}
             type="button"
             aria-label={shareCopied ? 'Enlace copiado' : 'Copiar enlace de FMK Service'}
-            title={shareCopied ? 'Enlace copiado' : 'Compartir'}
+            title={shareCopied ? 'Enlace copiado' : 'Copiar enlace'}
             onClick={copySiteAddress}
           >
             <ShareIcon copied={shareCopied} />
@@ -385,7 +381,7 @@ function App() {
                 title="Instagram"
                 onClick={() => trackAction('hero_instagram')}
               >
-                <InstagramIcon />
+                <img src="/instagram-blue.png" alt="" width="250" height="249" />
               </a>
             </div>
           </div>
@@ -477,7 +473,7 @@ function App() {
               rel="noreferrer"
               onClick={() => trackAction('gallery_instagram')}
             >
-              <InstagramIcon />
+              <img className="button-icon" src="/instagram-blue.png" alt="" width="250" height="249" />
               Ver más en Instagram <ArrowIcon />
             </a>
           </div>
