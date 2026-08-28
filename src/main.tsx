@@ -108,6 +108,12 @@ const workshopCarousels: WorkshopCarousel[] = [
     copy: 'También trabajamos con equipos plegables.',
     slides: [
       {
+        src: '/work/multibrand-iphone.webp',
+        alt: 'iPhone reparado y listo para las pruebas finales en el taller',
+        width: 1200,
+        height: 1600,
+      },
+      {
         src: '/work/foldable-repair.webp',
         alt: 'Celulares plegables Motorola durante una reparación en FMK Service',
         width: 1200,
@@ -116,12 +122,6 @@ const workshopCarousels: WorkshopCarousel[] = [
       {
         src: '/work/multibrand-samsung.webp',
         alt: 'Celular Samsung revisado con equipamiento profesional en FMK Service',
-        width: 1200,
-        height: 1600,
-      },
-      {
-        src: '/work/multibrand-iphone.webp',
-        alt: 'iPhone reparado y listo para las pruebas finales en el taller',
         width: 1200,
         height: 1600,
       },
