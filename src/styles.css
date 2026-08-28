@@ -64,6 +64,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .button-primary { background: var(--blue); color: #fff; }
 .button-primary:hover { background: var(--blue-dark); }
 .button-secondary { border-color: var(--line); background: #fff; }
+.button-icon { width: 1.15rem; height: 1.15rem; flex: 0 0 auto; object-fit: contain; }
 
 .hero-mark { position: relative; display: grid; aspect-ratio: 1; place-items: center; border-radius: 50%; background: radial-gradient(circle at 50% 45%, #fff 0 27%, #f7f7f9 58%, #e9e9ed 100%); }
 .hero-mark img { position: relative; z-index: 2; width: 63%; height: auto; object-fit: contain; filter: drop-shadow(0 1.5rem 2rem rgb(0 0 0 / 12%)); }
@@ -154,7 +155,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .footer-brand { color: var(--ink); }
 .footer-brand img { width: 6.25rem; }
 .site-footer > p { margin: 0; }
-.site-footer > a:last-child { justify-self: end; }
+.footer-copyright { justify-self: end; }
 
 @media (max-width: 60rem) {
   .hero { min-height: auto; grid-template-columns: 1fr; }
@@ -192,11 +193,11 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .work-card:not(:first-child) figcaption p { display: none; }
   .component-section, .reviews-section, .contact-section { grid-template-columns: 1fr; }
   .component-section, .contact-section { padding-top: 5.5rem; padding-bottom: 5.5rem; }
-  .training-logos { justify-content: flex-start; }
+  .training-logos { justify-content: center; }
   .reviews-section { padding-top: 5rem; padding-bottom: 5rem; }
   .process-list li { grid-template-columns: 3.5rem 1fr; }
   .site-footer { min-height: 11rem; grid-template-columns: 1fr auto; }
-  .site-footer > p { display: none; }
+  .site-footer > .footer-location { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

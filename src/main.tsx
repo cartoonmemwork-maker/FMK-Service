@@ -129,7 +129,8 @@ function App() {
             </p>
             <div className="hero-actions">
               <a className="button button-primary" href={whatsappUrl} target="_blank" rel="noreferrer">
-                Consultar reparación <ArrowIcon />
+                <img className="button-icon" src="/whatsapp-white.png" alt="" width="122" height="121" />
+                Consultar reparación
               </a>
               <a className="button button-secondary" href={mapsUrl} target="_blank" rel="noreferrer">
                 Cómo llegar
@@ -316,7 +317,8 @@ function App() {
             <h2>¿Qué le pasó a tu equipo?</h2>
             <p>Contanos el modelo y la falla. Te orientamos por WhatsApp antes de acercarte.</p>
             <a className="button button-light" href={whatsappUrl} target="_blank" rel="noreferrer">
-              Escribir por WhatsApp <ArrowIcon />
+              <img className="button-icon" src="/whatsapp-blue.png" alt="" width="122" height="121" />
+              Escribir por WhatsApp
             </a>
           </div>
 
@@ -344,8 +346,8 @@ function App() {
         <a className="brand footer-brand" href="#inicio">
           <img src="/fmk-service-wordmark.png" alt="FMK Service" width="564" height="272" />
         </a>
-        <p>Servicio técnico · San Martín</p>
-        <a href={instagramUrl} target="_blank" rel="noreferrer">Instagram <ArrowIcon /></a>
+        <p className="footer-location">Servicio técnico · San Martín</p>
+        <p className="footer-copyright">FMK Service © 2026</p>
       </footer>
     </div>
   );
