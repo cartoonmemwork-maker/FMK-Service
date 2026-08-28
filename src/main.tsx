@@ -160,8 +160,8 @@ function App() {
             <span>Formación técnica</span>
           </div>
           <div>
-            <strong>Todos los días</strong>
-            <span>Consultá disponibilidad</span>
+            <strong>15 años</strong>
+            <span>De trayectoria</span>
           </div>
         </section>
 
