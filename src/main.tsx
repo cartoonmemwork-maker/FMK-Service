@@ -80,7 +80,7 @@ const workshopPhotos = [
     className: '',
   },
   {
-    src: '/work/microsoldering-work.webp',
+    src: '/work/microsoldering-bga.webp',
     alt: 'Componente electrónico BGA preparado para un trabajo de microsoldadura en FMK Service',
     title: 'Microsoldadura',
     copy: 'Precisión para fallas a nivel placa.',
