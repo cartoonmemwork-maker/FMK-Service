@@ -83,11 +83,10 @@ const workshopCarousels: WorkshopCarousel[] = [
     className: 'work-card-iphone',
     slides: [
       {
-        src: '/work/iphone-repair.webp',
-        alt: 'iPhone abierto durante una reparación interna en el taller de FMK Service',
-        width: 900,
+        src: '/work/internal-samsung-battery.webp',
+        alt: 'Celular Samsung abierto durante el reemplazo de su batería original',
+        width: 1200,
         height: 1600,
-        objectPosition: '50% 66%',
       },
       {
         src: '/work/internal-multibrand-workbench.webp',
@@ -96,10 +95,11 @@ const workshopCarousels: WorkshopCarousel[] = [
         height: 1600,
       },
       {
-        src: '/work/internal-samsung-battery.webp',
-        alt: 'Celular Samsung abierto durante el reemplazo de su batería original',
-        width: 1200,
+        src: '/work/iphone-repair.webp',
+        alt: 'iPhone abierto durante una reparación interna en el taller de FMK Service',
+        width: 900,
         height: 1600,
+        objectPosition: '50% 66%',
       },
     ],
   },
