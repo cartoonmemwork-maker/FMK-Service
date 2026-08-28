@@ -81,7 +81,7 @@ const workshopPhotos = [
   },
   {
     src: '/work/microsoldering-work.webp',
-    alt: 'Microscopio profesional utilizado para microsoldadura en FMK Service',
+    alt: 'Componente electrónico BGA preparado para un trabajo de microsoldadura en FMK Service',
     title: 'Microsoldadura',
     copy: 'Precisión para fallas a nivel placa.',
     width: 1200,
