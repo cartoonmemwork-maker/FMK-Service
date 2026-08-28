@@ -58,7 +58,7 @@ const supportedBrands = [
   { name: 'Infinix', src: '/brands/infinix.png', width: 300, height: 66 },
   { name: 'Tecno', src: '/brands/tecno.png', width: 301, height: 60 },
   { name: 'ZTE', src: '/brands/zte.png', width: 300, height: 147 },
-  { name: 'Android', src: '/brands/android.png', width: 1024, height: 640 },
+  { name: 'PlayStation', src: '/brands/playstation.png', width: 288, height: 222 },
 ];
 
 type WorkshopSlide = {
