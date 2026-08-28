@@ -7,6 +7,16 @@ const whatsappUrl =
   'https://wa.me/5491133190913?text=Hola%20FMK%20Service%2C%20quiero%20consultar%20por%20una%20reparaci%C3%B3n.';
 const mapsUrl = 'https://maps.app.goo.gl/j4KGtbFLW4RRRVRo7';
 const instagramUrl = 'https://www.instagram.com/fmkservice.ok/';
+const shareDomain = 'fmkservice.ar';
+
+type ZarazApi = {
+  track: (eventName: string, properties?: Record<string, string>) => Promise<void> | void;
+};
+
+function trackAction(button: string) {
+  const zaraz = (window as Window & { zaraz?: ZarazApi }).zaraz;
+  void zaraz?.track('button_click', { button });
+}
 
 const services = [
   {
@@ -70,6 +80,7 @@ type WorkshopSlide = {
 };
 
 type WorkshopCarousel = {
+  analyticsId: string;
   title: string;
   copy: string;
   className?: string;
@@ -78,16 +89,11 @@ type WorkshopCarousel = {
 
 const workshopCarousels: WorkshopCarousel[] = [
   {
+    analyticsId: 'internal',
     title: 'Trabajo interno',
     copy: 'Diagnóstico y reemplazo de componentes.',
     className: 'work-card-iphone',
     slides: [
-      {
-        src: '/work/internal-samsung-battery.webp',
-        alt: 'Celular Samsung abierto durante el reemplazo de su batería original',
-        width: 1200,
-        height: 1600,
-      },
       {
         src: '/work/internal-multibrand-workbench.webp',
         alt: 'Equipos Motorola desarmados para reparación interna en el banco de trabajo de FMK Service',
@@ -101,9 +107,16 @@ const workshopCarousels: WorkshopCarousel[] = [
         height: 1600,
         objectPosition: '50% 66%',
       },
+      {
+        src: '/work/internal-samsung-battery.webp',
+        alt: 'Celular Samsung abierto durante el reemplazo de su batería original',
+        width: 1200,
+        height: 1600,
+      },
     ],
   },
   {
+    analyticsId: 'multibrand',
     title: 'Equipos multimarca',
     copy: 'También trabajamos con equipos plegables.',
     slides: [
@@ -128,6 +141,7 @@ const workshopCarousels: WorkshopCarousel[] = [
     ],
   },
   {
+    analyticsId: 'microsoldering',
     title: 'Microsoldadura',
     copy: 'Precisión para fallas a nivel placa.',
     slides: [
@@ -176,6 +190,7 @@ function WorkCarousel({ carousel }: { carousel: WorkshopCarousel }) {
   };
 
   const showRelativeSlide = (offset: number) => {
+    trackAction(`carousel_${carousel.analyticsId}`);
     showSlide(activeIndex + offset);
   };
 
@@ -260,7 +275,50 @@ function ArrowIcon() {
   return <span aria-hidden="true">↗</span>;
 }
 
+function ShareIcon({ copied }: { copied: boolean }) {
+  if (copied) return <span aria-hidden="true">✓</span>;
+
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M12 16V3m0 0L7 8m5-5 5 5" />
+      <path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />
+    </svg>
+  );
+}
+
+function InstagramIcon() {
+  return <span className="instagram-blue-icon" aria-hidden="true" />;
+}
+
 function App() {
+  const [shareCopied, setShareCopied] = useState(false);
+  const shareTimer = useRef<number | null>(null);
+
+  const copySiteAddress = async () => {
+    trackAction('header_share');
+    let copied = false;
+
+    try {
+      await navigator.clipboard.writeText(shareDomain);
+      copied = true;
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = shareDomain;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      copied = document.execCommand('copy');
+      textarea.remove();
+    }
+
+    if (!copied) return;
+
+    setShareCopied(true);
+    if (shareTimer.current !== null) window.clearTimeout(shareTimer.current);
+    shareTimer.current = window.setTimeout(() => setShareCopied(false), 1800);
+  };
+
   return (
     <div className="site-shell">
       <header className="site-header">
@@ -279,9 +337,26 @@ function App() {
           <a href="#contacto">Contacto</a>
         </nav>
 
-        <a className="header-cta" href={whatsappUrl} target="_blank" rel="noreferrer">
-          Consultar
-        </a>
+        <div className="header-actions">
+          <button
+            className={`header-share ${shareCopied ? 'is-copied' : ''}`}
+            type="button"
+            aria-label={shareCopied ? 'Enlace copiado' : 'Copiar enlace de FMK Service'}
+            title={shareCopied ? 'Enlace copiado' : 'Compartir'}
+            onClick={copySiteAddress}
+          >
+            <ShareIcon copied={shareCopied} />
+          </button>
+          <a
+            className="header-cta"
+            href={whatsappUrl}
+            target="_blank"
+            rel="noreferrer"
+            onClick={() => trackAction('header_whatsapp')}
+          >
+            Consultar
+          </a>
+        </div>
       </header>
 
       <main>
@@ -291,15 +366,26 @@ function App() {
             <h1>Servicio técnico</h1>
             <p className="hero-lead">
               Reparamos iPhone, celulares Android y equipos electrónicos con diagnóstico
-              preciso, trabajo a nivel componente y calidad garantizada.
+              preciso, trabajando a nivel componente y garantizando la más alta calidad.
             </p>
             <div className="hero-actions">
-              <a className="button button-primary" href={whatsappUrl} target="_blank" rel="noreferrer">
+              <a className="button button-primary" href={whatsappUrl} target="_blank" rel="noreferrer" onClick={() => trackAction('hero_whatsapp')}>
                 <img className="button-icon" src="/whatsapp-white.png" alt="" width="122" height="121" />
                 Consultar reparación
               </a>
-              <a className="button button-secondary" href={mapsUrl} target="_blank" rel="noreferrer">
+              <a className="button button-secondary" href={mapsUrl} target="_blank" rel="noreferrer" onClick={() => trackAction('hero_maps')}>
                 Cómo llegar
+              </a>
+              <a
+                className="button button-secondary button-icon-only"
+                href={instagramUrl}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Ver FMK Service en Instagram"
+                title="Instagram"
+                onClick={() => trackAction('hero_instagram')}
+              >
+                <InstagramIcon />
               </a>
             </div>
           </div>
@@ -313,7 +399,7 @@ function App() {
         </section>
 
         <section className="proof-strip" aria-label="Razones para elegir FMK Service">
-          <a href={mapsUrl} target="_blank" rel="noreferrer">
+          <a href={mapsUrl} target="_blank" rel="noreferrer" onClick={() => trackAction('rating_maps')}>
             <strong>5.0 ★</strong>
             <span>Calificación en Google</span>
           </a>
@@ -353,8 +439,8 @@ function App() {
 
         <section className="section services-section" id="servicios">
           <div className="section-heading">
-            <p className="eyebrow">Qué reparamos</p>
-            <h2>Del vidrio a la placa.</h2>
+            <p className="eyebrow">¿Qué reparamos?</p>
+            <h2>Desde el vidrio a la placa.</h2>
             <p>
               Trabajamos con iPhone, Android y otros equipos electrónicos. Si no encontrás
               tu problema en la lista, escribinos: probablemente también tenga solución.
@@ -374,14 +460,26 @@ function App() {
 
         <section className="work-section" aria-labelledby="work-title">
           <div className="work-heading">
-            <p className="eyebrow">Taller real</p>
-            <h2 id="work-title">Trabajo real. Precisión profesional.</h2>
+            <p className="eyebrow">Laboratorio de electrónica</p>
+            <h2 id="work-title">Equipo profesional y soluciones reales.</h2>
           </div>
 
           <div className="work-gallery">
             {workshopCarousels.map((carousel) => (
               <WorkCarousel carousel={carousel} key={carousel.title} />
             ))}
+          </div>
+          <div className="work-actions">
+            <a
+              className="button button-secondary"
+              href={instagramUrl}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => trackAction('gallery_instagram')}
+            >
+              <InstagramIcon />
+              Ver más en Instagram <ArrowIcon />
+            </a>
           </div>
         </section>
 
@@ -455,10 +553,9 @@ function App() {
           <div>
             <h2>La confianza también se repara todos los días.</h2>
             <p>
-              La mejor referencia es la experiencia de quienes ya trajeron su equipo a
-              FMK Service.
+              La mejor reseña es que, cuando nos conocen, siempre nos recomiendan.
             </p>
-            <a className="text-link" href={mapsUrl} target="_blank" rel="noreferrer">
+            <a className="text-link" href={mapsUrl} target="_blank" rel="noreferrer" onClick={() => trackAction('reviews_maps')}>
               Ver reseñas en Google <ArrowIcon />
             </a>
           </div>
@@ -469,7 +566,7 @@ function App() {
             <p className="eyebrow eyebrow-light">FMK Service · San Martín</p>
             <h2>¿Qué le pasó a tu equipo?</h2>
             <p>Contanos el modelo y la falla. Te orientamos por WhatsApp antes de acercarte.</p>
-            <a className="button button-light" href={whatsappUrl} target="_blank" rel="noreferrer">
+            <a className="button button-light" href={whatsappUrl} target="_blank" rel="noreferrer" onClick={() => trackAction('contact_whatsapp')}>
               <img className="button-icon" src="/whatsapp-blue.png" alt="" width="122" height="121" />
               Escribir por WhatsApp
             </a>
@@ -480,13 +577,13 @@ function App() {
               <span>Dirección</span>
               <strong>25 de Mayo 8192</strong>
               <p>Villa José León Suárez, San Martín</p>
-              <a href={mapsUrl} target="_blank" rel="noreferrer">Abrir en Google Maps</a>
+              <a href={mapsUrl} target="_blank" rel="noreferrer" onClick={() => trackAction('contact_maps')}>Abrir en Google Maps</a>
             </div>
             <div>
               <span>Contacto</span>
               <strong>11 3319-0913</strong>
               <p>Atención todos los días</p>
-              <a className="instagram-link" href={instagramUrl} target="_blank" rel="noreferrer">
+              <a className="instagram-link" href={instagramUrl} target="_blank" rel="noreferrer" onClick={() => trackAction('contact_instagram')}>
                 <img src="/instagram.png" alt="" width="250" height="249" />
                 @fmkservice.ok
               </a>
