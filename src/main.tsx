@@ -51,7 +51,12 @@ const supportedBrands = [
   { name: 'Apple', src: '/brands/apple.png', width: 320, height: 320 },
   { name: 'Samsung', src: '/brands/samsung.png', width: 630, height: 320 },
   { name: 'Motorola', src: '/brands/motorola.png', width: 320, height: 320 },
+  { name: 'Xiaomi', src: '/brands/xiaomi.png', width: 350, height: 350 },
   { name: 'LG', src: '/brands/lg.png', width: 630, height: 320 },
+  { name: 'TCL', src: '/brands/tcl.png', width: 301, height: 95 },
+  { name: 'Infinix', src: '/brands/infinix.png', width: 300, height: 66 },
+  { name: 'Tecno', src: '/brands/tecno.png', width: 301, height: 60 },
+  { name: 'ZTE', src: '/brands/zte.png', width: 300, height: 147 },
   { name: 'Android', src: '/brands/android.png', width: 1024, height: 640 },
 ];
 
@@ -147,7 +152,7 @@ function App() {
           </a>
           <div>
             <strong>24 h</strong>
-            <span>Muchas reparaciones</span>
+            <span>Entrega express</span>
           </div>
           <div>
             <strong>Certificado</strong>
@@ -243,6 +248,10 @@ function App() {
               <li>Fallas de encendido</li>
               <li>Diagnóstico electrónico</li>
             </ul>
+            <div className="training-proof">
+              <strong>5 capacitaciones certificadas</strong>
+              <span>Microelectrónica, microsoldadura y reparación de dispositivos Apple.</span>
+            </div>
           </div>
         </section>
 
@@ -304,7 +313,10 @@ function App() {
               <span>Contacto</span>
               <strong>11 3319-0913</strong>
               <p>Atención todos los días</p>
-              <a href={instagramUrl} target="_blank" rel="noreferrer">@fmkservice.ok</a>
+              <a className="instagram-link" href={instagramUrl} target="_blank" rel="noreferrer">
+                <img src="/instagram.png" alt="" width="250" height="249" />
+                @fmkservice.ok
+              </a>
             </div>
           </address>
         </section>
