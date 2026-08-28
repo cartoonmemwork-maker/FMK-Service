@@ -278,14 +278,7 @@ function ArrowIcon() {
 function ShareIcon({ copied }: { copied: boolean }) {
   if (copied) return <span aria-hidden="true">✓</span>;
 
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <circle cx="18" cy="5" r="2.25" />
-      <circle cx="6" cy="12" r="2.25" />
-      <circle cx="18" cy="19" r="2.25" />
-      <path d="m8 11 7.9-4.6M8 13l7.9 4.6" />
-    </svg>
-  );
+  return <img src="/share-iphone.png" alt="" width="100" height="140" />;
 }
 
 function App() {
@@ -580,7 +573,7 @@ function App() {
             <div>
               <span>Contacto</span>
               <strong>11 3319-0913</strong>
-              <p>Lunes a viernes · 10 a 19 h</p>
+              <p>Lunes a viernes · 10:00 hs a 19:00 hs</p>
               <a className="instagram-link" href={instagramUrl} target="_blank" rel="noreferrer" onClick={() => trackAction('contact_instagram')}>
                 <img src="/instagram.png" alt="" width="250" height="249" />
                 @fmkservice.ok
