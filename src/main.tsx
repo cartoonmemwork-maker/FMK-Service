@@ -285,8 +285,22 @@ function App() {
   const [shareCopied, setShareCopied] = useState(false);
   const shareTimer = useRef<number | null>(null);
 
-  const copySiteAddress = async () => {
+  const shareSite = async () => {
     trackAction('header_share');
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'FMK Service',
+          text: 'Servicio técnico en San Martín.',
+          url: shareDomain,
+        });
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+      }
+    }
+
     let copied = false;
 
     try {
@@ -332,9 +346,9 @@ function App() {
           <button
             className={`header-share ${shareCopied ? 'is-copied' : ''}`}
             type="button"
-            aria-label={shareCopied ? 'Enlace copiado' : 'Copiar enlace de FMK Service'}
-            title={shareCopied ? 'Enlace copiado' : 'Copiar enlace'}
-            onClick={copySiteAddress}
+            aria-label={shareCopied ? 'Enlace copiado' : 'Compartir FMK Service'}
+            title={shareCopied ? 'Enlace copiado' : 'Compartir'}
+            onClick={shareSite}
           >
             <ShareIcon copied={shareCopied} />
           </button>
