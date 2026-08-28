@@ -48,7 +48,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   width: min(100% - 2.5rem, 76rem);
   min-height: min(49rem, calc(100svh - 4.5rem));
   margin: 0 auto;
-  padding: clamp(4.5rem, 10vw, 8rem) 0;
+  padding: clamp(3rem, 5vw, 4.5rem) 0 clamp(4rem, 6vw, 5.5rem);
   grid-template-columns: minmax(0, 1.04fr) minmax(20rem, 0.96fr);
   align-items: center;
   gap: clamp(3rem, 7vw, 7rem);
@@ -120,6 +120,10 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .training-proof { display: flex; margin-top: 2rem; padding-top: 1.5rem; flex-direction: column; gap: 0.35rem; border-top: 1px solid #3a3a3c; }
 .training-proof strong { font-size: 0.95rem; letter-spacing: -0.015em; }
 .training-proof span { color: #a1a1a6; font-size: 0.84rem; line-height: 1.5; }
+.training-logos { display: flex; margin-top: 1rem; align-items: center; justify-content: flex-end; gap: 1.25rem; }
+.training-logos img { height: auto; object-fit: contain; }
+.training-logos img:first-child { width: 9.25rem; }
+.training-logos img:last-child { width: 4.5rem; }
 
 .section-heading.compact { display: block; max-width: 53rem; }
 .process-list { margin: 0; padding: 0; border-top: 1px solid var(--line); list-style: none; }
@@ -165,7 +169,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .site-header { grid-template-columns: 1fr auto; }
   .desktop-nav { display: none; }
   .brand img { width: 6.2rem; }
-  .hero { width: min(100% - 2rem, 76rem); padding: 4rem 0 5rem; }
+  .hero { width: min(100% - 2rem, 76rem); padding: 3rem 0 4rem; }
   .hero h1 { font-size: clamp(3.8rem, 19vw, 6rem); }
   .hero-mark { width: calc(100% - 1rem); }
   .hero-label { font-size: 0.66rem; }
@@ -188,6 +192,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .work-card:not(:first-child) figcaption p { display: none; }
   .component-section, .reviews-section, .contact-section { grid-template-columns: 1fr; }
   .component-section, .contact-section { padding-top: 5.5rem; padding-bottom: 5.5rem; }
+  .training-logos { justify-content: flex-start; }
   .reviews-section { padding-top: 5rem; padding-bottom: 5rem; }
   .process-list li { grid-template-columns: 3.5rem 1fr; }
   .site-footer { min-height: 11rem; grid-template-columns: 1fr auto; }

@@ -251,6 +251,24 @@ function App() {
             <div className="training-proof">
               <strong>5 capacitaciones certificadas</strong>
               <span>Microelectrónica, microsoldadura y reparación de dispositivos Apple.</span>
+              <div className="training-logos" aria-label="Instituciones y reconocimientos de formación">
+                <img
+                  src="/training/yo-reparo-academy.png"
+                  alt="Yo Reparo Academy"
+                  width="1024"
+                  height="457"
+                  loading="lazy"
+                  decoding="async"
+                />
+                <img
+                  src="/training/certification-badge.png"
+                  alt="Insignia de formación certificada"
+                  width="138"
+                  height="135"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
             </div>
           </div>
         </section>
