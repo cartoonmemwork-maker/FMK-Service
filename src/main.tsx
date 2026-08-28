@@ -55,6 +55,36 @@ const supportedBrands = [
   { name: 'Android', src: '/brands/android.png', width: 1024, height: 640 },
 ];
 
+const workshopPhotos = [
+  {
+    src: '/work/iphone-repair.webp',
+    alt: 'iPhone abierto durante una reparación interna en el taller de FMK Service',
+    title: 'Trabajo interno',
+    copy: 'Diagnóstico y reemplazo de componentes.',
+    width: 900,
+    height: 1600,
+    className: 'work-card-iphone',
+  },
+  {
+    src: '/work/foldable-repair.webp',
+    alt: 'Celulares plegables Motorola durante una reparación en FMK Service',
+    title: 'Equipos multimarca',
+    copy: 'También trabajamos con equipos plegables.',
+    width: 1200,
+    height: 1600,
+    className: '',
+  },
+  {
+    src: '/work/microsoldering-work.webp',
+    alt: 'Microscopio profesional utilizado para microsoldadura en FMK Service',
+    title: 'Microsoldadura',
+    copy: 'Precisión para fallas a nivel placa.',
+    width: 1200,
+    height: 1600,
+    className: '',
+  },
+];
+
 function ArrowIcon() {
   return <span aria-hidden="true">↗</span>;
 }
@@ -166,6 +196,32 @@ function App() {
                 <h3>{service.title}</h3>
                 <p>{service.copy}</p>
               </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="work-section" aria-labelledby="work-title">
+          <div className="work-heading">
+            <p className="eyebrow">Taller real</p>
+            <h2 id="work-title">Trabajo real. Precisión profesional.</h2>
+          </div>
+
+          <div className="work-gallery">
+            {workshopPhotos.map((photo) => (
+              <figure className={`work-card ${photo.className}`} key={photo.src}>
+                <img
+                  src={photo.src}
+                  alt={photo.alt}
+                  width={photo.width}
+                  height={photo.height}
+                  loading="lazy"
+                  decoding="async"
+                />
+                <figcaption>
+                  <h3>{photo.title}</h3>
+                  <p>{photo.copy}</p>
+                </figcaption>
+              </figure>
             ))}
           </div>
         </section>
