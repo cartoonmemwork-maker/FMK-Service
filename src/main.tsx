@@ -285,8 +285,8 @@ function App() {
   const [shareCopied, setShareCopied] = useState(false);
   const shareTimer = useRef<number | null>(null);
 
-  const shareSite = async () => {
-    trackAction('header_share');
+  const shareSite = async (trackingId: string) => {
+    trackAction(trackingId);
 
     if (navigator.share) {
       try {
@@ -348,7 +348,7 @@ function App() {
             type="button"
             aria-label={shareCopied ? 'Enlace copiado' : 'Compartir FMK Service'}
             title={shareCopied ? 'Enlace copiado' : 'Compartir'}
-            onClick={shareSite}
+            onClick={() => void shareSite('header_share')}
           >
             <ShareIcon copied={shareCopied} />
           </button>
@@ -560,9 +560,24 @@ function App() {
             <p>
               La mejor reseña es que, cuando nos conocen, siempre nos recomiendan.
             </p>
-            <a className="text-link" href={mapsUrl} target="_blank" rel="noreferrer" onClick={() => trackAction('reviews_maps')}>
-              Ver reseñas en Google <ArrowIcon />
-            </a>
+            <div className="review-actions">
+              <a className="text-link" href={mapsUrl} target="_blank" rel="noreferrer" onClick={() => trackAction('reviews_maps')}>
+                Ver reseñas en Google <ArrowIcon />
+              </a>
+              <button
+                className="text-link share-text-button"
+                type="button"
+                aria-label={shareCopied ? 'Enlace copiado' : 'Compartir FMK Service'}
+                onClick={() => void shareSite('reviews_share')}
+              >
+                {shareCopied ? (
+                  <span aria-hidden="true">✓</span>
+                ) : (
+                  <img src="/share-iphone.png" alt="" width="100" height="140" />
+                )}
+                {shareCopied ? 'Enlace copiado' : 'Compartir'}
+              </button>
+            </div>
           </div>
         </section>
 

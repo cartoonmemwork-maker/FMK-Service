@@ -150,7 +150,10 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .rating { margin: 0; font-size: clamp(5rem, 12vw, 10rem); font-weight: 760; letter-spacing: -0.085em; line-height: 0.8; }
 .stars { margin-top: 1.5rem; color: #f5a623; font-size: 1.35rem; letter-spacing: 0.12em; }
 .reviews-section > div:last-child > p { max-width: 34rem; margin: 1.5rem 0; color: var(--muted); font-size: 1.06rem; line-height: 1.6; }
-.text-link { display: inline-flex; gap: 0.5rem; color: var(--blue); font-weight: 650; }
+.review-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.5rem; }
+.text-link { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--blue); font-weight: 650; }
+.share-text-button { padding: 0; border: 0; background: transparent; color: var(--blue); font: inherit; font-weight: 650; cursor: pointer; }
+.share-text-button img { width: auto; height: 1.15rem; object-fit: contain; }
 
 .contact-section { display: grid; padding: clamp(6rem, 11vw, 10rem) max(1.25rem, calc((100vw - 76rem) / 2)); grid-template-columns: 1.15fr 0.85fr; gap: clamp(3rem, 9vw, 9rem); background: var(--blue); color: #fff; }
 .contact-section > div > p:not(.eyebrow) { max-width: 38rem; margin: 1.75rem 0 2rem; color: rgb(255 255 255 / 76%); font-size: 1.1rem; line-height: 1.6; }
