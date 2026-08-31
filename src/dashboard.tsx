@@ -77,8 +77,10 @@ function formatNumber(value: number) {
 }
 
 function formatSource(source: string) {
+  if (source === 'utm:google_maps' || source === 'utm:google-maps') return 'Google Maps';
   if (source.startsWith('utm:')) return `Campaña · ${source.slice(4)}`;
   if (source === 'Facebook') return 'Facebook / Messenger';
+  if (source === 'Google') return 'Google · Búsqueda o Maps';
   return source;
 }
 
@@ -399,9 +401,11 @@ export function AnalyticsDashboard() {
               </div>
               <ProgressList items={data.sources} />
               <p className="dashboard-card-note">
+                Cada visita se asigna a un origen; la suma coincide con “Visitas”.
+                <br />
                 “Directo” también puede incluir WhatsApp y otras aplicaciones que no informan el origen.
                 <br />
-                “Facebook / Messenger” indica que se informó un dominio de Facebook; no necesariamente una publicación pública.
+                Google agrupa Búsqueda y Maps cuando el enlace no está identificado.
               </p>
             </section>
 
