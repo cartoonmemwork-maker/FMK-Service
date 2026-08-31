@@ -1,6 +1,8 @@
-import { StrictMode, useRef, useState } from 'react';
+import { StrictMode, useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, PointerEvent } from 'react';
 import { createRoot } from 'react-dom/client';
+import { trackAction, trackPageView } from './analytics';
+import { AnalyticsDashboard } from './dashboard';
 import './styles.css';
 
 const whatsappUrl =
@@ -8,15 +10,6 @@ const whatsappUrl =
 const mapsUrl = 'https://maps.app.goo.gl/j4KGtbFLW4RRRVRo7';
 const instagramUrl = 'https://www.instagram.com/fmkservice.ok/';
 const shareDomain = 'https://fmkservice.ar/';
-
-type ZarazApi = {
-  track: (eventName: string, properties?: Record<string, string>) => Promise<void> | void;
-};
-
-function trackAction(button: string) {
-  const zaraz = (window as Window & { zaraz?: ZarazApi }).zaraz;
-  void zaraz?.track('button_click', { button });
-}
 
 const services = [
   {
@@ -284,6 +277,10 @@ function ShareIcon({ copied }: { copied: boolean }) {
 function App() {
   const [shareCopied, setShareCopied] = useState(false);
   const shareTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    trackPageView();
+  }, []);
 
   const shareSite = async (trackingId: string) => {
     trackAction(trackingId);
@@ -623,8 +620,12 @@ function App() {
   );
 }
 
+const isDashboard =
+  window.location.pathname === '/estadisticas' ||
+  window.location.pathname.startsWith('/estadisticas/');
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    {isDashboard ? <AnalyticsDashboard /> : <App />}
   </StrictMode>,
 );
