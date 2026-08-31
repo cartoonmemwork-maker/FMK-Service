@@ -3,6 +3,7 @@ import type { D1Result, FunctionContext } from '../_types';
 
 type TotalsRow = {
   visits: number;
+  unique_devices: number;
   whatsapp_clicks: number;
   whatsapp_visitors: number;
   maps_clicks: number;
@@ -11,7 +12,16 @@ type TotalsRow = {
   carousel_interactions: number;
 };
 
-type DailyRow = { day: string; visits: number; whatsapp: number };
+type DailyRow = {
+  day: string;
+  visits: number;
+  unique_devices: number;
+  whatsapp: number;
+  whatsapp_devices: number;
+  instagram: number;
+  maps: number;
+  shares: number;
+};
 type GroupRow = { label: string; value: number };
 
 const allowedRanges = new Set([7, 30, 90]);
@@ -51,9 +61,16 @@ export async function onRequestGet(context: FunctionContext) {
   const totalsStatement = env.DB
     .prepare(
       `SELECT
-         COUNT(DISTINCT CASE WHEN event_name = 'page_view' THEN page_view_id END) AS visits,
+         SUM(CASE WHEN event_name = 'page_view' THEN 1 ELSE 0 END) AS visits,
+         COUNT(DISTINCT CASE
+           WHEN event_name = 'page_view' THEN
+             CASE WHEN page_view_id LIKE 'd-%' THEN substr(page_view_id, 3, 32) ELSE page_view_id END
+         END) AS unique_devices,
          SUM(CASE WHEN event_name IN ('header_whatsapp', 'hero_whatsapp', 'contact_whatsapp') THEN 1 ELSE 0 END) AS whatsapp_clicks,
-         COUNT(DISTINCT CASE WHEN event_name IN ('header_whatsapp', 'hero_whatsapp', 'contact_whatsapp') THEN page_view_id END) AS whatsapp_visitors,
+         COUNT(DISTINCT CASE
+           WHEN event_name IN ('header_whatsapp', 'hero_whatsapp', 'contact_whatsapp') THEN
+             CASE WHEN page_view_id LIKE 'd-%' THEN substr(page_view_id, 3, 32) ELSE page_view_id END
+         END) AS whatsapp_visitors,
          SUM(CASE WHEN event_name IN ('hero_maps', 'rating_maps', 'reviews_maps', 'contact_maps') THEN 1 ELSE 0 END) AS maps_clicks,
          SUM(CASE WHEN event_name IN ('hero_instagram', 'gallery_instagram', 'contact_instagram') THEN 1 ELSE 0 END) AS instagram_clicks,
          SUM(CASE WHEN event_name IN ('header_share', 'reviews_share') THEN 1 ELSE 0 END) AS shares,
@@ -72,8 +89,19 @@ export async function onRequestGet(context: FunctionContext) {
        )
        SELECT
          dates.day AS day,
-         COUNT(DISTINCT CASE WHEN events.event_name = 'page_view' THEN events.page_view_id END) AS visits,
-         SUM(CASE WHEN events.event_name IN ('header_whatsapp', 'hero_whatsapp', 'contact_whatsapp') THEN 1 ELSE 0 END) AS whatsapp
+         SUM(CASE WHEN events.event_name = 'page_view' THEN 1 ELSE 0 END) AS visits,
+         COUNT(DISTINCT CASE
+           WHEN events.event_name = 'page_view' THEN
+             CASE WHEN events.page_view_id LIKE 'd-%' THEN substr(events.page_view_id, 3, 32) ELSE events.page_view_id END
+         END) AS unique_devices,
+         SUM(CASE WHEN events.event_name IN ('header_whatsapp', 'hero_whatsapp', 'contact_whatsapp') THEN 1 ELSE 0 END) AS whatsapp,
+         COUNT(DISTINCT CASE
+           WHEN events.event_name IN ('header_whatsapp', 'hero_whatsapp', 'contact_whatsapp') THEN
+             CASE WHEN events.page_view_id LIKE 'd-%' THEN substr(events.page_view_id, 3, 32) ELSE events.page_view_id END
+         END) AS whatsapp_devices,
+         SUM(CASE WHEN events.event_name IN ('hero_instagram', 'gallery_instagram', 'contact_instagram') THEN 1 ELSE 0 END) AS instagram,
+         SUM(CASE WHEN events.event_name IN ('hero_maps', 'rating_maps', 'reviews_maps', 'contact_maps') THEN 1 ELSE 0 END) AS maps,
+         SUM(CASE WHEN events.event_name IN ('header_share', 'reviews_share') THEN 1 ELSE 0 END) AS shares
        FROM dates
        LEFT JOIN analytics_events AS events
          ON events.created_at >= unixepoch(dates.day)
@@ -85,7 +113,8 @@ export async function onRequestGet(context: FunctionContext) {
 
   const devicesStatement = env.DB
     .prepare(
-      `SELECT device AS label, COUNT(DISTINCT page_view_id) AS value
+      `SELECT device AS label,
+              COUNT(DISTINCT CASE WHEN page_view_id LIKE 'd-%' THEN substr(page_view_id, 3, 32) ELSE page_view_id END) AS value
        FROM analytics_events
        WHERE event_name = 'page_view' AND created_at >= ?
        GROUP BY device
@@ -125,6 +154,7 @@ export async function onRequestGet(context: FunctionContext) {
       rangeDays: days,
       totals: {
         visits: Number(totals?.visits ?? 0),
+        uniqueDevices: Number(totals?.unique_devices ?? 0),
         whatsappClicks: Number(totals?.whatsapp_clicks ?? 0),
         whatsappVisitors: Number(totals?.whatsapp_visitors ?? 0),
         mapsClicks: Number(totals?.maps_clicks ?? 0),
@@ -135,7 +165,12 @@ export async function onRequestGet(context: FunctionContext) {
       daily: (dailyResult.results as DailyRow[]).map((row) => ({
         day: row.day,
         visits: Number(row.visits ?? 0),
+        uniqueDevices: Number(row.unique_devices ?? 0),
         whatsapp: Number(row.whatsapp ?? 0),
+        whatsappDevices: Number(row.whatsapp_devices ?? 0),
+        instagram: Number(row.instagram ?? 0),
+        maps: Number(row.maps ?? 0),
+        shares: Number(row.shares ?? 0),
       })),
       devices: (devicesResult.results as GroupRow[]).map((row) => ({
         label: row.label,

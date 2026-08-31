@@ -3,13 +3,24 @@ import type { FormEvent } from 'react';
 import './dashboard.css';
 
 type Metric = { label: string; value: number };
-type DailyMetric = { day: string; visits: number; whatsapp: number };
+type DailyMetric = {
+  day: string;
+  visits: number;
+  uniqueDevices: number;
+  whatsapp: number;
+  whatsappDevices: number;
+  instagram: number;
+  maps: number;
+  shares: number;
+};
+type ChartMetric = 'visits' | 'uniqueDevices' | 'whatsapp' | 'conversion' | 'instagram' | 'maps' | 'shares';
 
 type DashboardData = {
   generatedAt: string;
   rangeDays: number;
   totals: {
     visits: number;
+    uniqueDevices: number;
     whatsappClicks: number;
     whatsappVisitors: number;
     mapsClicks: number;
@@ -24,6 +35,16 @@ type DashboardData = {
 };
 
 const ranges = [7, 30, 90] as const;
+
+const chartMetricLabels: Record<ChartMetric, string> = {
+  visits: 'Visitas',
+  uniqueDevices: 'Dispositivos únicos',
+  whatsapp: 'WhatsApp',
+  conversion: 'Conversión',
+  instagram: 'Instagram',
+  maps: 'Cómo llegar',
+  shares: 'Compartidos',
+};
 
 const actionDefinitions = [
   { id: 'header_share', action: 'Compartir', location: 'Encabezado' },
@@ -80,8 +101,25 @@ function ProgressList({ items, labels }: { items: Metric[]; labels?: Record<stri
   );
 }
 
-function TrendChart({ data }: { data: DailyMetric[] }) {
-  const maxValue = Math.max(1, ...data.map((item) => item.visits));
+function getTrendValue(item: DailyMetric, metric: ChartMetric) {
+  if (metric === 'conversion') {
+    return item.uniqueDevices ? (item.whatsappDevices / item.uniqueDevices) * 100 : 0;
+  }
+
+  return item[metric];
+}
+
+function formatTrendValue(value: number, metric: ChartMetric) {
+  if (metric === 'conversion') {
+    return `${value.toLocaleString('es-AR', { maximumFractionDigits: 1 })}%`;
+  }
+
+  return formatNumber(value);
+}
+
+function TrendChart({ data, metric }: { data: DailyMetric[]; metric: ChartMetric }) {
+  const values = data.map((item) => getTrendValue(item, metric));
+  const maxValue = Math.max(1, ...values);
   const labelStep = data.length > 45 ? 10 : data.length > 14 ? 5 : 1;
 
   return (
@@ -90,19 +128,19 @@ function TrendChart({ data }: { data: DailyMetric[] }) {
         {data.map((item, index) => {
           const date = new Date(`${item.day}T12:00:00`);
           const label = new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: '2-digit' }).format(date);
+          const value = getTrendValue(item, metric);
 
           return (
             <div
               className="trend-column"
               key={item.day}
-              title={`${label}: ${item.visits} visitas · ${item.whatsapp} WhatsApp`}
+              title={`${label}: ${formatTrendValue(value, metric)} · ${chartMetricLabels[metric]}`}
             >
               <div className="trend-values">
-                {item.whatsapp > 0 && <span>{item.whatsapp}</span>}
-                <strong>{item.visits}</strong>
+                <strong>{formatTrendValue(value, metric)}</strong>
               </div>
               <div className="trend-bar-track" aria-hidden="true">
-                <span style={{ height: `${Math.max(4, (item.visits / maxValue) * 100)}%` }} />
+                <span style={{ height: value === 0 ? '0' : `${Math.max(4, (value / maxValue) * 100)}%` }} />
               </div>
               <time dateTime={item.day}>{index % labelStep === 0 ? label : ''}</time>
             </div>
@@ -190,6 +228,7 @@ function DashboardLogin({ onSuccess }: { onSuccess: () => Promise<void> }) {
 
 export function AnalyticsDashboard() {
   const [range, setRange] = useState<(typeof ranges)[number]>(30);
+  const [chartMetric, setChartMetric] = useState<ChartMetric>('visits');
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -232,9 +271,19 @@ export function AnalyticsDashboard() {
   }, [loadData]);
 
   const conversion = useMemo(() => {
-    if (!data?.totals.visits) return 0;
-    return (data.totals.whatsappVisitors / data.totals.visits) * 100;
+    if (!data?.totals.uniqueDevices) return 0;
+    return (data.totals.whatsappVisitors / data.totals.uniqueDevices) * 100;
   }, [data]);
+
+  const metricCards = data ? [
+    { id: 'visits' as const, label: 'Visitas', value: formatNumber(data.totals.visits), detail: 'Cargas de la página' },
+    { id: 'uniqueDevices' as const, label: 'Dispositivos únicos', value: formatNumber(data.totals.uniqueDevices), detail: 'Equipos diferentes' },
+    { id: 'whatsapp' as const, label: 'WhatsApp', value: formatNumber(data.totals.whatsappClicks), detail: 'Clics de consulta' },
+    { id: 'conversion' as const, label: 'Conversión', value: `${conversion.toLocaleString('es-AR', { maximumFractionDigits: 1 })}%`, detail: 'Dispositivos que consultaron' },
+    { id: 'instagram' as const, label: 'Instagram', value: formatNumber(data.totals.instagramClicks), detail: 'Clics al perfil' },
+    { id: 'maps' as const, label: 'Cómo llegar', value: formatNumber(data.totals.mapsClicks), detail: 'Clics en Maps' },
+    { id: 'shares' as const, label: 'Compartidos', value: formatNumber(data.totals.shares), detail: 'Recomendaciones' },
+  ] : [];
 
   const actions = useMemo(() => {
     const counts = new Map(data?.actions.map((item) => [item.label, item.value]) ?? []);
@@ -276,7 +325,7 @@ export function AnalyticsDashboard() {
         <section className="dashboard-controls" aria-label="Período de estadísticas">
           <div>
             <p>Rendimiento comercial</p>
-            <span>Medición anónima: sin cookies de seguimiento ni direcciones IP.</span>
+            <span>Dispositivos mediante un código aleatorio local; sin cuentas, cookies ni direcciones IP.</span>
           </div>
           <div className="range-switch" role="group" aria-label="Seleccionar período">
             {ranges.map((days) => (
@@ -306,50 +355,31 @@ export function AnalyticsDashboard() {
       ) : data ? (
         <>
           <section className="metric-grid" aria-label="Resumen">
-            <article>
-              <span>Visitas</span>
-              <strong>{formatNumber(data.totals.visits)}</strong>
-              <small>Cargas de la página</small>
-            </article>
-            <article className="metric-primary">
-              <span>WhatsApp</span>
-              <strong>{formatNumber(data.totals.whatsappClicks)}</strong>
-              <small>Clics de consulta</small>
-            </article>
-            <article>
-              <span>Conversión</span>
-              <strong>{conversion.toLocaleString('es-AR', { maximumFractionDigits: 1 })}%</strong>
-              <small>Visitas que consultaron</small>
-            </article>
-            <article>
-              <span>Instagram</span>
-              <strong>{formatNumber(data.totals.instagramClicks)}</strong>
-              <small>Clics al perfil</small>
-            </article>
-            <article>
-              <span>Cómo llegar</span>
-              <strong>{formatNumber(data.totals.mapsClicks)}</strong>
-              <small>Clics en Maps</small>
-            </article>
-            <article>
-              <span>Compartidos</span>
-              <strong>{formatNumber(data.totals.shares)}</strong>
-              <small>Recomendaciones</small>
-            </article>
+            {metricCards.map((metric) => (
+              <button
+                aria-controls="analytics-trend"
+                aria-pressed={chartMetric === metric.id}
+                className={chartMetric === metric.id ? 'is-active' : ''}
+                key={metric.id}
+                onClick={() => setChartMetric(metric.id)}
+                type="button"
+              >
+                <span>{metric.label}</span>
+                <strong>{metric.value}</strong>
+                <small>{metric.detail}</small>
+              </button>
+            ))}
           </section>
 
-          <section className="dashboard-card trend-card">
+          <section className="dashboard-card trend-card" id="analytics-trend">
             <div className="card-heading">
               <div>
                 <span>Tendencia</span>
-                <h2>Visitas y consultas por día</h2>
+                <h2>{chartMetricLabels[chartMetric]} por día</h2>
               </div>
-              <div className="chart-legend" aria-label="Referencias del gráfico">
-                <span><i /> Visitas</span>
-                <span><b /> WhatsApp</span>
-              </div>
+              <p>Seleccioná una tarjeta para cambiar el gráfico.</p>
             </div>
-            <TrendChart data={data.daily} />
+            <TrendChart data={data.daily} metric={chartMetric} />
           </section>
 
           <div className="dashboard-columns">
@@ -377,14 +407,17 @@ export function AnalyticsDashboard() {
             </section>
           </div>
 
-          <section className="dashboard-card actions-card">
-            <div className="card-heading">
+          <details className="dashboard-card actions-card">
+            <summary className="actions-summary">
               <div>
                 <span>Interacciones</span>
                 <h2>Qué botones funcionaron</h2>
               </div>
-              <p>{formatNumber(data.totals.instagramClicks)} Instagram · {formatNumber(data.totals.carouselInteractions)} carruseles</p>
-            </div>
+              <div className="actions-summary-meta">
+                <p>{formatNumber(data.totals.instagramClicks)} Instagram · {formatNumber(data.totals.carouselInteractions)} carruseles</p>
+                <i aria-hidden="true" />
+              </div>
+            </summary>
             <div className="actions-table-wrap">
               <table>
                 <thead>
@@ -405,7 +438,7 @@ export function AnalyticsDashboard() {
                 </tbody>
               </table>
             </div>
-          </section>
+          </details>
 
           <footer className="dashboard-footer">
             <p>

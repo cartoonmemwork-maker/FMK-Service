@@ -1,5 +1,6 @@
 const analyticsEndpoint = '/api/events';
 const productionHosts = new Set(['fmkservice.ar', 'www.fmkservice.ar']);
+const deviceStorageKey = 'fmk_analytics_device_id';
 
 type ZarazApi = {
   track: (eventName: string, properties?: Record<string, string>) => Promise<void> | void;
@@ -13,13 +14,32 @@ type AnalyticsPayload = {
   device: 'desktop' | 'mobile' | 'tablet';
 };
 
-const pageViewId = createPageViewId();
+let pageViewId = '';
 let pageViewTracked = false;
 
-function createPageViewId() {
-  if ('randomUUID' in crypto) return crypto.randomUUID();
+function createRandomHex(byteLength: number) {
+  const bytes = new Uint8Array(byteLength);
+  crypto.getRandomValues(bytes);
 
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 18)}`;
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function getDeviceId() {
+  try {
+    const storedId = localStorage.getItem(deviceStorageKey);
+    if (storedId && /^[a-f0-9]{32}$/.test(storedId)) return storedId;
+
+    const newId = createRandomHex(16);
+    localStorage.setItem(deviceStorageKey, newId);
+    return newId;
+  } catch {
+    return createRandomHex(16);
+  }
+}
+
+function getPageViewId() {
+  if (!pageViewId) pageViewId = `d-${getDeviceId()}-${createRandomHex(8)}`;
+  return pageViewId;
 }
 
 function getDevice(): AnalyticsPayload['device'] {
@@ -67,7 +87,7 @@ function sendEvent(eventName: string) {
   if (!canTrack()) return;
 
   const payload: AnalyticsPayload = {
-    pageViewId,
+    pageViewId: getPageViewId(),
     eventName,
     path: window.location.pathname,
     source: getSource(),

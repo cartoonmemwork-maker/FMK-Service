@@ -38,3 +38,5 @@ El panel vive en `/estadisticas` y utiliza Pages Functions con una base D1. En e
 - Secreto cifrado `ANALYTICS_PASSWORD` con un mínimo de 12 caracteres.
 
 La contraseña no debe agregarse al repositorio ni a archivos `.env` versionados.
+
+La medición pública no guarda nombres, cuentas ni direcciones IP. Para estimar dispositivos únicos utiliza un identificador aleatorio propio en `localStorage`; cada carga mantiene además un identificador de sesión independiente.
