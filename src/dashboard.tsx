@@ -25,23 +25,23 @@ type DashboardData = {
 
 const ranges = [7, 30, 90] as const;
 
-const actionLabels: Record<string, string> = {
-  header_share: 'Compartir · encabezado',
-  header_whatsapp: 'WhatsApp · encabezado',
-  hero_whatsapp: 'WhatsApp · portada',
-  hero_maps: 'Cómo llegar · portada',
-  hero_instagram: 'Instagram · portada',
-  rating_maps: 'Calificación de Google',
-  carousel_internal: 'Carrusel · trabajo interno',
-  carousel_multibrand: 'Carrusel · multimarca',
-  carousel_microsoldering: 'Carrusel · microsoldadura',
-  gallery_instagram: 'Instagram · trabajos',
-  reviews_maps: 'Reseñas en Google',
-  reviews_share: 'Compartir · reseñas',
-  contact_whatsapp: 'WhatsApp · contacto',
-  contact_maps: 'Maps · contacto',
-  contact_instagram: 'Instagram · contacto',
-};
+const actionDefinitions = [
+  { id: 'header_share', action: 'Compartir', location: 'Encabezado' },
+  { id: 'header_whatsapp', action: 'WhatsApp', location: 'Encabezado' },
+  { id: 'hero_whatsapp', action: 'WhatsApp', location: 'Portada' },
+  { id: 'hero_maps', action: 'Cómo llegar', location: 'Portada' },
+  { id: 'hero_instagram', action: 'Instagram', location: 'Portada' },
+  { id: 'rating_maps', action: 'Google Maps', location: 'Calificación' },
+  { id: 'carousel_internal', action: 'Carrusel', location: 'Trabajo interno' },
+  { id: 'carousel_multibrand', action: 'Carrusel', location: 'Equipos multimarca' },
+  { id: 'carousel_microsoldering', action: 'Carrusel', location: 'Microsoldadura' },
+  { id: 'gallery_instagram', action: 'Ver más en Instagram', location: 'Trabajos' },
+  { id: 'reviews_maps', action: 'Ver reseñas en Google', location: 'Reseñas' },
+  { id: 'reviews_share', action: 'Compartir', location: 'Reseñas' },
+  { id: 'contact_whatsapp', action: 'WhatsApp', location: 'Contacto' },
+  { id: 'contact_maps', action: 'Cómo llegar', location: 'Contacto' },
+  { id: 'contact_instagram', action: 'Instagram', location: 'Contacto' },
+] as const;
 
 const deviceLabels: Record<string, string> = {
   desktop: 'Computadora',
@@ -236,6 +236,15 @@ export function AnalyticsDashboard() {
     return (data.totals.whatsappVisitors / data.totals.visits) * 100;
   }, [data]);
 
+  const actions = useMemo(() => {
+    const counts = new Map(data?.actions.map((item) => [item.label, item.value]) ?? []);
+
+    return actionDefinitions.map((definition) => ({
+      ...definition,
+      value: counts.get(definition.id) ?? 0,
+    }));
+  }, [data]);
+
   const logOut = async () => {
     try {
       await fetch('/estadisticas/logout', {
@@ -300,7 +309,7 @@ export function AnalyticsDashboard() {
             <article>
               <span>Visitas</span>
               <strong>{formatNumber(data.totals.visits)}</strong>
-              <small>Sesiones de la página</small>
+              <small>Cargas de la página</small>
             </article>
             <article className="metric-primary">
               <span>WhatsApp</span>
@@ -311,6 +320,11 @@ export function AnalyticsDashboard() {
               <span>Conversión</span>
               <strong>{conversion.toLocaleString('es-AR', { maximumFractionDigits: 1 })}%</strong>
               <small>Visitas que consultaron</small>
+            </article>
+            <article>
+              <span>Instagram</span>
+              <strong>{formatNumber(data.totals.instagramClicks)}</strong>
+              <small>Clics al perfil</small>
             </article>
             <article>
               <span>Cómo llegar</span>
@@ -347,6 +361,9 @@ export function AnalyticsDashboard() {
                 </div>
               </div>
               <ProgressList items={data.sources} />
+              <p className="dashboard-card-note">
+                “Directo” también puede incluir WhatsApp y otras aplicaciones que no informan el origen.
+              </p>
             </section>
 
             <section className="dashboard-card">
@@ -373,19 +390,20 @@ export function AnalyticsDashboard() {
                 <thead>
                   <tr>
                     <th>Acción</th>
+                    <th>Ubicación</th>
                     <th>Clics</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.actions.map((item) => (
-                    <tr key={item.label}>
-                      <td>{actionLabels[item.label] ?? item.label}</td>
+                  {actions.map((item) => (
+                    <tr key={item.id}>
+                      <td>{item.action}</td>
+                      <td>{item.location}</td>
                       <td>{formatNumber(item.value)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {data.actions.length === 0 && <p className="dashboard-empty-inline">Todavía no hay interacciones.</p>}
             </div>
           </section>
 
