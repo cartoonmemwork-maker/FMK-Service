@@ -1,6 +1,7 @@
 const analyticsEndpoint = '/api/events';
 const productionHosts = new Set(['fmkservice.ar', 'www.fmkservice.ar']);
 const deviceStorageKey = 'fmk_analytics_device_id';
+const crawlerPattern = /bot|crawler|spider|facebookexternalhit|facebot|preview/i;
 
 type ZarazApi = {
   track: (eventName: string, properties?: Record<string, string>) => Promise<void> | void;
@@ -80,7 +81,11 @@ function getSource() {
 }
 
 function canTrack() {
-  return productionHosts.has(window.location.hostname) && window.location.pathname === '/';
+  return (
+    productionHosts.has(window.location.hostname) &&
+    window.location.pathname === '/' &&
+    !crawlerPattern.test(navigator.userAgent)
+  );
 }
 
 function sendEvent(eventName: string) {

@@ -21,6 +21,7 @@ const allowedEvents = new Set([
   'contact_instagram',
 ]);
 const allowedDevices = new Set(['desktop', 'mobile', 'tablet']);
+const crawlerPattern = /bot|crawler|spider|facebookexternalhit|facebot|preview/i;
 
 type EventPayload = {
   pageViewId?: unknown;
@@ -60,8 +61,14 @@ export async function onRequestPost(context: FunctionContext) {
   const { request, env } = context;
   const requestUrl = new URL(request.url);
   const origin = request.headers.get('Origin');
+  const userAgent = request.headers.get('User-Agent') ?? '';
 
-  if (!allowedHosts.has(requestUrl.hostname) || !origin || !allowedOrigins.has(origin)) {
+  if (
+    !allowedHosts.has(requestUrl.hostname) ||
+    !origin ||
+    !allowedOrigins.has(origin) ||
+    crawlerPattern.test(userAgent)
+  ) {
     return emptyResponse(403);
   }
 

@@ -40,28 +40,30 @@ const chartMetricLabels: Record<ChartMetric, string> = {
   visits: 'Visitas',
   uniqueDevices: 'Dispositivos únicos',
   whatsapp: 'WhatsApp',
-  conversion: 'Conversión',
+  conversion: 'Dispositivos que consultaron',
   instagram: 'Instagram',
   maps: 'Cómo llegar',
   shares: 'Compartidos',
 };
 
+const actionSections = ['Encabezado', 'Portada', 'Calificación', 'Trabajos', 'Reseñas', 'Contacto'] as const;
+
 const actionDefinitions = [
-  { id: 'header_share', action: 'Compartir', location: 'Encabezado' },
-  { id: 'header_whatsapp', action: 'WhatsApp', location: 'Encabezado' },
-  { id: 'hero_whatsapp', action: 'WhatsApp', location: 'Portada' },
-  { id: 'hero_maps', action: 'Cómo llegar', location: 'Portada' },
-  { id: 'hero_instagram', action: 'Instagram', location: 'Portada' },
-  { id: 'rating_maps', action: 'Google Maps', location: 'Calificación' },
-  { id: 'carousel_internal', action: 'Carrusel', location: 'Trabajo interno' },
-  { id: 'carousel_multibrand', action: 'Carrusel', location: 'Equipos multimarca' },
-  { id: 'carousel_microsoldering', action: 'Carrusel', location: 'Microsoldadura' },
-  { id: 'gallery_instagram', action: 'Ver más en Instagram', location: 'Trabajos' },
-  { id: 'reviews_maps', action: 'Ver reseñas en Google', location: 'Reseñas' },
-  { id: 'reviews_share', action: 'Compartir', location: 'Reseñas' },
-  { id: 'contact_whatsapp', action: 'WhatsApp', location: 'Contacto' },
-  { id: 'contact_maps', action: 'Cómo llegar', location: 'Contacto' },
-  { id: 'contact_instagram', action: 'Instagram', location: 'Contacto' },
+  { id: 'header_share', action: 'Compartir', location: 'Barra superior', section: 'Encabezado' },
+  { id: 'header_whatsapp', action: 'WhatsApp', location: 'Barra superior', section: 'Encabezado' },
+  { id: 'hero_whatsapp', action: 'WhatsApp', location: 'Acción principal', section: 'Portada' },
+  { id: 'hero_maps', action: 'Cómo llegar', location: 'Acción principal', section: 'Portada' },
+  { id: 'hero_instagram', action: 'Instagram', location: 'Acción principal', section: 'Portada' },
+  { id: 'rating_maps', action: 'Google Maps', location: 'Calificación', section: 'Calificación' },
+  { id: 'carousel_internal', action: 'Carrusel', location: 'Trabajo interno', section: 'Trabajos' },
+  { id: 'carousel_multibrand', action: 'Carrusel', location: 'Equipos multimarca', section: 'Trabajos' },
+  { id: 'carousel_microsoldering', action: 'Carrusel', location: 'Microsoldadura', section: 'Trabajos' },
+  { id: 'gallery_instagram', action: 'Ver más en Instagram', location: 'Galería', section: 'Trabajos' },
+  { id: 'reviews_maps', action: 'Ver reseñas en Google', location: 'Acción principal', section: 'Reseñas' },
+  { id: 'reviews_share', action: 'Compartir', location: 'Acción principal', section: 'Reseñas' },
+  { id: 'contact_whatsapp', action: 'WhatsApp', location: 'Datos del negocio', section: 'Contacto' },
+  { id: 'contact_maps', action: 'Cómo llegar', location: 'Datos del negocio', section: 'Contacto' },
+  { id: 'contact_instagram', action: 'Instagram', location: 'Datos del negocio', section: 'Contacto' },
 ] as const;
 
 const deviceLabels: Record<string, string> = {
@@ -76,6 +78,7 @@ function formatNumber(value: number) {
 
 function formatSource(source: string) {
   if (source.startsWith('utm:')) return `Campaña · ${source.slice(4)}`;
+  if (source === 'Facebook') return 'Facebook / Messenger';
   return source;
 }
 
@@ -102,18 +105,12 @@ function ProgressList({ items, labels }: { items: Metric[]; labels?: Record<stri
 }
 
 function getTrendValue(item: DailyMetric, metric: ChartMetric) {
-  if (metric === 'conversion') {
-    return item.uniqueDevices ? (item.whatsappDevices / item.uniqueDevices) * 100 : 0;
-  }
+  if (metric === 'conversion') return item.whatsappDevices;
 
   return item[metric];
 }
 
-function formatTrendValue(value: number, metric: ChartMetric) {
-  if (metric === 'conversion') {
-    return `${value.toLocaleString('es-AR', { maximumFractionDigits: 1 })}%`;
-  }
-
+function formatTrendValue(value: number) {
   return formatNumber(value);
 }
 
@@ -134,10 +131,10 @@ function TrendChart({ data, metric }: { data: DailyMetric[]; metric: ChartMetric
             <div
               className="trend-column"
               key={item.day}
-              title={`${label}: ${formatTrendValue(value, metric)} · ${chartMetricLabels[metric]}`}
+              title={`${label}: ${formatTrendValue(value)} · ${chartMetricLabels[metric]}`}
             >
               <div className="trend-values">
-                <strong>{formatTrendValue(value, metric)}</strong>
+                <strong>{formatTrendValue(value)}</strong>
               </div>
               <div className="trend-bar-track" aria-hidden="true">
                 <span style={{ height: value === 0 ? '0' : `${Math.max(4, (value / maxValue) * 100)}%` }} />
@@ -294,6 +291,16 @@ export function AnalyticsDashboard() {
     }));
   }, [data]);
 
+  const actionGroups = useMemo(() => actionSections.map((section) => {
+    const items = actions.filter((item) => item.section === section);
+
+    return {
+      section,
+      items,
+      total: items.reduce((sum, item) => sum + item.value, 0),
+    };
+  }), [actions]);
+
   const logOut = async () => {
     try {
       await fetch('/estadisticas/logout', {
@@ -393,6 +400,8 @@ export function AnalyticsDashboard() {
               <ProgressList items={data.sources} />
               <p className="dashboard-card-note">
                 “Directo” también puede incluir WhatsApp y otras aplicaciones que no informan el origen.
+                <br />
+                “Facebook / Messenger” indica que se informó un dominio de Facebook; no necesariamente una publicación pública.
               </p>
             </section>
 
@@ -407,38 +416,46 @@ export function AnalyticsDashboard() {
             </section>
           </div>
 
-          <details className="dashboard-card actions-card">
-            <summary className="actions-summary">
+          <section className="dashboard-card actions-card">
+            <div className="actions-heading">
               <div>
                 <span>Interacciones</span>
                 <h2>Qué botones funcionaron</h2>
               </div>
-              <div className="actions-summary-meta">
-                <p>{formatNumber(data.totals.instagramClicks)} Instagram · {formatNumber(data.totals.carouselInteractions)} carruseles</p>
-                <i aria-hidden="true" />
-              </div>
-            </summary>
-            <div className="actions-table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Acción</th>
-                    <th>Ubicación</th>
-                    <th>Clics</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {actions.map((item) => (
-                    <tr key={item.id}>
-                      <td>{item.action}</td>
-                      <td>{item.location}</td>
-                      <td>{formatNumber(item.value)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <p>{formatNumber(data.totals.instagramClicks)} Instagram · {formatNumber(data.totals.carouselInteractions)} carruseles</p>
             </div>
-          </details>
+            <div className="action-groups">
+              {actionGroups.map((group) => (
+                <details className="action-group" key={group.section}>
+                  <summary>
+                    <span>{group.section}</span>
+                    <span className="action-group-total">{formatNumber(group.total)} clics</span>
+                    <i aria-hidden="true" />
+                  </summary>
+                  <div className="actions-table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Acción</th>
+                          <th>Ubicación</th>
+                          <th>Clics</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {group.items.map((item) => (
+                          <tr key={item.id}>
+                            <td>{item.action}</td>
+                            <td>{item.location}</td>
+                            <td>{formatNumber(item.value)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
+              ))}
+            </div>
+          </section>
 
           <footer className="dashboard-footer">
             <p>

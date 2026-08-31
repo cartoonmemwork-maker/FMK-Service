@@ -124,7 +124,8 @@ export async function onRequestGet(context: FunctionContext) {
 
   const sourcesStatement = env.DB
     .prepare(
-      `SELECT source AS label, COUNT(DISTINCT page_view_id) AS value
+      `SELECT source AS label,
+              COUNT(DISTINCT CASE WHEN page_view_id LIKE 'd-%' THEN substr(page_view_id, 3, 32) ELSE page_view_id END) AS value
        FROM analytics_events
        WHERE event_name = 'page_view' AND created_at >= ?
        GROUP BY source
