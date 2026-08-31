@@ -17,6 +17,7 @@ export type D1Database = {
 
 export type Environment = {
   DB?: D1Database;
+  ANALYTICS_PASSWORD?: string;
 };
 
 export type FunctionContext = {

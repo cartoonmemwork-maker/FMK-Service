@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { FormEvent } from 'react';
 import './dashboard.css';
 
 type Metric = { label: string; value: number };
@@ -121,11 +122,78 @@ function DashboardLoading() {
   );
 }
 
+function DashboardLogin({ onSuccess }: { onSuccess: () => Promise<void> }) {
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmitting(true);
+    setError('');
+
+    try {
+      const response = await fetch('/estadisticas/login', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password }),
+      });
+      const result = await response.json() as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(result.error ?? 'No pudimos iniciar la sesión.');
+      }
+
+      setPassword('');
+      await onSuccess();
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'No pudimos iniciar la sesión.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <section className="dashboard-login" aria-labelledby="dashboard-login-title">
+      <div className="dashboard-lock" aria-hidden="true">
+        <span />
+      </div>
+      <span className="dashboard-login-eyebrow">Acceso exclusivo</span>
+      <h2 id="dashboard-login-title">Panel de FMK Service</h2>
+      <p>Ingresá la contraseña para consultar las visitas y acciones de la página.</p>
+      <form onSubmit={(event) => void submit(event)}>
+        <label htmlFor="dashboard-password">Contraseña</label>
+        <input
+          autoComplete="current-password"
+          autoFocus
+          id="dashboard-password"
+          name="password"
+          onChange={(event) => setPassword(event.target.value)}
+          placeholder="Tu contraseña"
+          required
+          type="password"
+          value={password}
+        />
+        {error && <p className="dashboard-login-error" role="alert">{error}</p>}
+        <button disabled={submitting || password.length === 0} type="submit">
+          {submitting ? 'Ingresando…' : 'Ingresar'}
+        </button>
+      </form>
+      <small>Sesión segura · La contraseña no se guarda en el navegador</small>
+    </section>
+  );
+}
+
 export function AnalyticsDashboard() {
   const [range, setRange] = useState<(typeof ranges)[number]>(30);
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -137,8 +205,15 @@ export function AnalyticsDashboard() {
         headers: { Accept: 'application/json' },
       });
 
+      if (response.status === 401) {
+        setAuthenticated(false);
+        setData(null);
+        return;
+      }
+
       if (!response.ok) throw new Error(`No se pudieron cargar las estadísticas (${response.status}).`);
 
+      setAuthenticated(true);
       setData((await response.json()) as DashboardData);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'No se pudieron cargar las estadísticas.');
@@ -161,6 +236,20 @@ export function AnalyticsDashboard() {
     return (data.totals.whatsappVisitors / data.totals.visits) * 100;
   }, [data]);
 
+  const logOut = async () => {
+    try {
+      await fetch('/estadisticas/logout', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json' },
+      });
+    } finally {
+      setData(null);
+      setError('');
+      setAuthenticated(false);
+    }
+  };
+
   return (
     <main className="dashboard-shell">
       <header className="dashboard-header">
@@ -174,26 +263,30 @@ export function AnalyticsDashboard() {
         <a className="dashboard-back" href="/">Ver página ↗</a>
       </header>
 
-      <section className="dashboard-controls" aria-label="Período de estadísticas">
-        <div>
-          <p>Rendimiento comercial</p>
-          <span>Datos anónimos, sin cookies ni direcciones IP.</span>
-        </div>
-        <div className="range-switch" role="group" aria-label="Seleccionar período">
-          {ranges.map((days) => (
-            <button
-              className={range === days ? 'is-active' : ''}
-              type="button"
-              key={days}
-              onClick={() => setRange(days)}
-            >
-              {days} días
-            </button>
-          ))}
-        </div>
-      </section>
+      {authenticated && (
+        <section className="dashboard-controls" aria-label="Período de estadísticas">
+          <div>
+            <p>Rendimiento comercial</p>
+            <span>Medición anónima: sin cookies de seguimiento ni direcciones IP.</span>
+          </div>
+          <div className="range-switch" role="group" aria-label="Seleccionar período">
+            {ranges.map((days) => (
+              <button
+                className={range === days ? 'is-active' : ''}
+                type="button"
+                key={days}
+                onClick={() => setRange(days)}
+              >
+                {days} días
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
-      {loading && !data ? (
+      {authenticated === false ? (
+        <DashboardLogin onSuccess={loadData} />
+      ) : loading && !data ? (
         <DashboardLoading />
       ) : error ? (
         <section className="dashboard-state dashboard-error" role="alert">
@@ -301,9 +394,14 @@ export function AnalyticsDashboard() {
               Última actualización:{' '}
               {new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(data.generatedAt))}
             </p>
-            <button type="button" onClick={() => void loadData()} disabled={loading}>
-              {loading ? 'Actualizando…' : 'Actualizar'}
-            </button>
+            <div className="dashboard-footer-actions">
+              <button className="dashboard-logout" type="button" onClick={() => void logOut()}>
+                Cerrar sesión
+              </button>
+              <button type="button" onClick={() => void loadData()} disabled={loading}>
+                {loading ? 'Actualizando…' : 'Actualizar'}
+              </button>
+            </div>
           </footer>
         </>
       ) : null}

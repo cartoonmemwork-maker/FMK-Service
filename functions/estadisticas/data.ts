@@ -1,3 +1,4 @@
+import { hasStatsPassword, hasValidStatsSession } from '../_auth';
 import type { D1Result, FunctionContext } from '../_types';
 
 type TotalsRow = {
@@ -33,10 +34,14 @@ function firstRow<Row>(result: D1Result<Row>) {
 export async function onRequestGet(context: FunctionContext) {
   const { request, env } = context;
   const requestUrl = new URL(request.url);
-  const accessToken = request.headers.get('Cf-Access-Jwt-Assertion');
 
   if (requestUrl.hostname !== 'fmkservice.ar') return jsonResponse({ error: 'Not found' }, 404);
-  if (!accessToken) return jsonResponse({ error: 'Acceso privado no configurado.' }, 401);
+  if (!hasStatsPassword(env)) {
+    return jsonResponse({ error: 'La contraseña del panel todavía no está configurada.' }, 503);
+  }
+  if (!(await hasValidStatsSession(request, env))) {
+    return jsonResponse({ error: 'La sesión del panel venció.' }, 401);
+  }
   if (!env.DB) return jsonResponse({ error: 'La base de estadísticas todavía no está conectada.' }, 503);
 
   const requestedDays = Number(requestUrl.searchParams.get('days') ?? '30');
