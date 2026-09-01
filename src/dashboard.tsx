@@ -13,7 +13,8 @@ type DailyMetric = {
   maps: number;
   shares: number;
 };
-type ChartMetric = 'visits' | 'uniqueDevices' | 'whatsapp' | 'conversion' | 'instagram' | 'maps' | 'shares';
+type ChartMetric = 'visits' | 'uniqueDevices' | 'whatsapp' | 'instagram' | 'maps' | 'shares';
+type ConversionMetric = Extract<ChartMetric, 'whatsapp' | 'instagram' | 'maps' | 'shares'>;
 
 type DashboardData = {
   generatedAt: string;
@@ -24,8 +25,11 @@ type DashboardData = {
     whatsappClicks: number;
     whatsappVisitors: number;
     mapsClicks: number;
+    mapsVisitors: number;
     instagramClicks: number;
+    instagramVisitors: number;
     shares: number;
+    shareVisitors: number;
     carouselInteractions: number;
   };
   daily: DailyMetric[];
@@ -40,7 +44,13 @@ const chartMetricLabels: Record<ChartMetric, string> = {
   visits: 'Visitas',
   uniqueDevices: 'Dispositivos únicos',
   whatsapp: 'WhatsApp',
-  conversion: 'Dispositivos que consultaron',
+  instagram: 'Instagram',
+  maps: 'Cómo llegar',
+  shares: 'Compartidos',
+};
+
+const conversionMetricLabels: Record<ConversionMetric, string> = {
+  whatsapp: 'WhatsApp',
   instagram: 'Instagram',
   maps: 'Cómo llegar',
   shares: 'Compartidos',
@@ -107,8 +117,6 @@ function ProgressList({ items, labels }: { items: Metric[]; labels?: Record<stri
 }
 
 function getTrendValue(item: DailyMetric, metric: ChartMetric) {
-  if (metric === 'conversion') return item.whatsappDevices;
-
   return item[metric];
 }
 
@@ -139,7 +147,13 @@ function TrendChart({ data, metric }: { data: DailyMetric[]; metric: ChartMetric
                 <strong>{formatTrendValue(value)}</strong>
               </div>
               <div className="trend-bar-track" aria-hidden="true">
-                <span style={{ height: value === 0 ? '0' : `${Math.max(4, (value / maxValue) * 100)}%` }} />
+                <span
+                  key={`${metric}-${item.day}`}
+                  style={{
+                    animationDelay: `${index * 35}ms`,
+                    height: value === 0 ? '0' : `${Math.max(4, (value / maxValue) * 100)}%`,
+                  }}
+                />
               </div>
               <time dateTime={item.day}>{index % labelStep === 0 ? label : ''}</time>
             </div>
@@ -269,16 +283,27 @@ export function AnalyticsDashboard() {
     };
   }, [loadData]);
 
-  const conversion = useMemo(() => {
-    if (!data?.totals.uniqueDevices) return 0;
-    return (data.totals.whatsappVisitors / data.totals.uniqueDevices) * 100;
-  }, [data]);
+  const conversionMetric: ConversionMetric = (
+    chartMetric === 'instagram' || chartMetric === 'maps' || chartMetric === 'shares'
+      ? chartMetric
+      : 'whatsapp'
+  );
+
+  const conversionVisitors = data ? {
+    whatsapp: data.totals.whatsappVisitors,
+    instagram: data.totals.instagramVisitors,
+    maps: data.totals.mapsVisitors,
+    shares: data.totals.shareVisitors,
+  }[conversionMetric] : 0;
+
+  const conversion = data?.totals.uniqueDevices
+    ? (conversionVisitors / data.totals.uniqueDevices) * 100
+    : 0;
 
   const metricCards = data ? [
     { id: 'visits' as const, label: 'Visitas', value: formatNumber(data.totals.visits), detail: 'Cargas de la página' },
     { id: 'uniqueDevices' as const, label: 'Dispositivos únicos', value: formatNumber(data.totals.uniqueDevices), detail: 'Equipos diferentes' },
     { id: 'whatsapp' as const, label: 'WhatsApp', value: formatNumber(data.totals.whatsappClicks), detail: 'Clics de consulta' },
-    { id: 'conversion' as const, label: 'Conversión', value: `${conversion.toLocaleString('es-AR', { maximumFractionDigits: 1 })}%`, detail: 'Dispositivos que consultaron' },
     { id: 'instagram' as const, label: 'Instagram', value: formatNumber(data.totals.instagramClicks), detail: 'Clics al perfil' },
     { id: 'maps' as const, label: 'Cómo llegar', value: formatNumber(data.totals.mapsClicks), detail: 'Clics en Maps' },
     { id: 'shares' as const, label: 'Compartidos', value: formatNumber(data.totals.shares), detail: 'Recomendaciones' },
@@ -378,6 +403,11 @@ export function AnalyticsDashboard() {
                 <small>{metric.detail}</small>
               </button>
             ))}
+            <article className="conversion-card" aria-live="polite">
+              <span>Conversión · {conversionMetricLabels[conversionMetric]}</span>
+              <strong>{conversion.toLocaleString('es-AR', { maximumFractionDigits: 1 })}%</strong>
+              <small>{formatNumber(conversionVisitors)} de {formatNumber(data.totals.uniqueDevices)} dispositivos</small>
+            </article>
           </section>
 
           <section className="dashboard-card trend-card" id="analytics-trend">
@@ -464,7 +494,11 @@ export function AnalyticsDashboard() {
           <footer className="dashboard-footer">
             <p>
               Última actualización:{' '}
-              {new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(data.generatedAt))}
+              {new Intl.DateTimeFormat('es-AR', {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+                timeZone: 'America/Argentina/Buenos_Aires',
+              }).format(new Date(data.generatedAt))}
             </p>
             <div className="dashboard-footer-actions">
               <button className="dashboard-logout" type="button" onClick={() => void logOut()}>
