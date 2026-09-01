@@ -158,9 +158,12 @@
 .trend-bar-track { position: relative; display: flex; overflow: hidden; align-items: flex-end; justify-content: center; border-radius: 0.45rem; background: #f0f0f2; }
 .trend-bar-track > span { width: 100%; border-radius: 0.45rem 0.45rem 0 0; background: linear-gradient(180deg, #6aa5ff, var(--blue)); transform-origin: bottom; animation: dashboard-bar-grow 420ms cubic-bezier(0.2, 0.75, 0.25, 1) both; }
 .trend-column time { padding-top: 0.45rem; color: var(--muted); font-size: 0.61rem; }
-.trend-column.is-untracked, .trend-column.is-future { opacity: 0.42; }
-.trend-column.is-untracked .trend-bar-track, .trend-column.is-future .trend-bar-track { background: #d7d8dc; }
-.trend-column.is-untracked .trend-bar-track > span, .trend-column.is-future .trend-bar-track > span { background: #aeb0b6; }
+.trend-column.is-untracked { opacity: 0.82; }
+.trend-column.is-untracked .trend-bar-track { background: #a9adb5; }
+.trend-column.is-untracked .trend-bar-track > span { background: #858a94; }
+.trend-column.is-future { opacity: 0.38; }
+.trend-column.is-future .trend-bar-track { background: #dfe1e5; }
+.trend-column.is-future .trend-bar-track > span { background: #bfc2c8; }
 .trend-note { margin: 0.8rem 0 0; color: var(--muted); font-size: 0.68rem; }
 
 .dashboard-columns { display: grid; margin-bottom: 1rem; grid-template-columns: 1fr 1fr; gap: 1rem; }

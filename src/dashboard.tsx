@@ -538,7 +538,7 @@ export function AnalyticsDashboard() {
               </div>
             </div>
             <TrendChart data={data.daily} metric={chartMetric} period={period} />
-            <p className="trend-note">El gris indica períodos anteriores a la medición o que todavía no ocurrieron.</p>
+            <p className="trend-note">Gris oscuro: anterior a la medición · Gris claro: todavía no ocurrió.</p>
           </section>
 
           <div className="dashboard-columns">
