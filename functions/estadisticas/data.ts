@@ -26,9 +26,12 @@ type DailyRow = {
   shares: number;
 };
 type GroupRow = { label: string; value: number };
+type Period = 'week' | 'month' | 'year';
+type BucketStatus = 'active' | 'future' | 'untracked';
 
-const allowedRanges = new Set([7, 30, 90]);
+const allowedPeriods = new Set<Period>(['week', 'month', 'year']);
 const argentinaTimeZone = 'America/Argentina/Buenos_Aires';
+const trackingStartDay = '2026-09-01';
 
 function argentinaDate(timestamp = Date.now()) {
   const parts = new Intl.DateTimeFormat('en-US', {
@@ -46,6 +49,52 @@ function addCalendarDays(day: string, amount: number) {
   const date = new Date(`${day}T12:00:00Z`);
   date.setUTCDate(date.getUTCDate() + amount);
   return date.toISOString().slice(0, 10);
+}
+
+function addCalendarMonths(day: string, amount: number) {
+  const date = new Date(`${day.slice(0, 7)}-01T12:00:00Z`);
+  date.setUTCMonth(date.getUTCMonth() + amount);
+  return date.toISOString().slice(0, 10);
+}
+
+function startOfWeek(day: string) {
+  const date = new Date(`${day}T12:00:00Z`);
+  const daysSinceMonday = (date.getUTCDay() + 6) % 7;
+  date.setUTCDate(date.getUTCDate() - daysSinceMonday);
+  return date.toISOString().slice(0, 10);
+}
+
+function startOfPeriod(day: string, period: Period) {
+  if (period === 'week') return startOfWeek(day);
+  if (period === 'month') return `${day.slice(0, 7)}-01`;
+  return `${day.slice(0, 4)}-01-01`;
+}
+
+function nextPeriodStart(day: string, period: Period) {
+  if (period === 'week') return addCalendarDays(day, 7);
+  if (period === 'month') return addCalendarMonths(day, 1);
+  return `${Number(day.slice(0, 4)) + 1}-01-01`;
+}
+
+function periodBuckets(start: string, end: string, period: Period) {
+  const buckets: string[] = [];
+  let cursor = start;
+
+  while (cursor < end) {
+    buckets.push(cursor);
+    cursor = period === 'year' ? addCalendarMonths(cursor, 1) : addCalendarDays(cursor, 1);
+  }
+
+  return buckets;
+}
+
+function bucketStatus(day: string, period: Period, today: string): BucketStatus {
+  const bucketEnd = period === 'year' ? addCalendarMonths(day, 1) : addCalendarDays(day, 1);
+  const currentBucket = period === 'year' ? `${today.slice(0, 7)}-01` : today;
+
+  if (bucketEnd <= trackingStartDay) return 'untracked';
+  if (day > currentBucket) return 'future';
+  return 'active';
 }
 
 function argentinaDayStart(day: string) {
@@ -80,13 +129,30 @@ export async function onRequestGet(context: FunctionContext) {
   }
   if (!env.DB) return jsonResponse({ error: 'La base de estadísticas todavía no está conectada.' }, 503);
 
-  const requestedDays = Number(requestUrl.searchParams.get('days') ?? '30');
-  const days = allowedRanges.has(requestedDays) ? requestedDays : 30;
+  const requestedPeriod = requestUrl.searchParams.get('period') as Period | null;
+  const period: Period = requestedPeriod && allowedPeriods.has(requestedPeriod) ? requestedPeriod : 'month';
   const today = argentinaDate();
-  const firstDay = addCalendarDays(today, -(days - 1));
+  const currentPeriodStart = startOfPeriod(today, period);
+  const firstSelectablePeriod = today < trackingStartDay
+    ? currentPeriodStart
+    : startOfPeriod(trackingStartDay, period);
+  const requestedAnchor = requestUrl.searchParams.get('anchor');
+  const validAnchor = requestedAnchor && /^\d{4}-\d{2}-\d{2}$/.test(requestedAnchor)
+    ? startOfPeriod(requestedAnchor, period)
+    : currentPeriodStart;
+  const periodStart = validAnchor < firstSelectablePeriod
+    ? firstSelectablePeriod
+    : validAnchor > currentPeriodStart
+      ? currentPeriodStart
+      : validAnchor;
+  const periodEnd = nextPeriodStart(periodStart, period);
   const nextDay = addCalendarDays(today, 1);
-  const since = argentinaDayStart(firstDay);
-  const until = argentinaDayStart(nextDay);
+  const queryEnd = periodEnd < nextDay ? periodEnd : nextDay;
+  const since = argentinaDayStart(periodStart);
+  const until = argentinaDayStart(queryEnd);
+  const bucketExpression = period === 'year'
+    ? "strftime('%Y-%m-01', created_at, 'unixepoch', '-3 hours')"
+    : "date(created_at, 'unixepoch', '-3 hours')";
 
   const totalsStatement = env.DB
     .prepare(
@@ -124,34 +190,27 @@ export async function onRequestGet(context: FunctionContext) {
 
   const dailyStatement = env.DB
     .prepare(
-      `WITH RECURSIVE dates(day) AS (
-         SELECT ?
-         UNION ALL
-         SELECT date(day, '+1 day') FROM dates WHERE day < ?
-       )
-       SELECT
-         dates.day AS day,
-         SUM(CASE WHEN events.event_name = 'page_view' THEN 1 ELSE 0 END) AS visits,
+      `SELECT
+         ${bucketExpression} AS day,
+         SUM(CASE WHEN event_name = 'page_view' THEN 1 ELSE 0 END) AS visits,
          COUNT(DISTINCT CASE
-           WHEN events.event_name = 'page_view' THEN
-             CASE WHEN events.page_view_id LIKE 'd-%' THEN substr(events.page_view_id, 3, 32) ELSE events.page_view_id END
+           WHEN event_name = 'page_view' THEN
+             CASE WHEN page_view_id LIKE 'd-%' THEN substr(page_view_id, 3, 32) ELSE page_view_id END
          END) AS unique_devices,
-         SUM(CASE WHEN events.event_name IN ('header_whatsapp', 'hero_whatsapp', 'contact_whatsapp') THEN 1 ELSE 0 END) AS whatsapp,
+         SUM(CASE WHEN event_name IN ('header_whatsapp', 'hero_whatsapp', 'contact_whatsapp') THEN 1 ELSE 0 END) AS whatsapp,
          COUNT(DISTINCT CASE
-           WHEN events.event_name IN ('header_whatsapp', 'hero_whatsapp', 'contact_whatsapp') THEN
-             CASE WHEN events.page_view_id LIKE 'd-%' THEN substr(events.page_view_id, 3, 32) ELSE events.page_view_id END
+           WHEN event_name IN ('header_whatsapp', 'hero_whatsapp', 'contact_whatsapp') THEN
+             CASE WHEN page_view_id LIKE 'd-%' THEN substr(page_view_id, 3, 32) ELSE page_view_id END
          END) AS whatsapp_devices,
-         SUM(CASE WHEN events.event_name IN ('hero_instagram', 'gallery_instagram', 'contact_instagram') THEN 1 ELSE 0 END) AS instagram,
-         SUM(CASE WHEN events.event_name IN ('hero_maps', 'rating_maps', 'reviews_maps', 'contact_maps') THEN 1 ELSE 0 END) AS maps,
-         SUM(CASE WHEN events.event_name IN ('header_share', 'reviews_share') THEN 1 ELSE 0 END) AS shares
-       FROM dates
-       LEFT JOIN analytics_events AS events
-         ON events.created_at >= unixepoch(dates.day, '+3 hours')
-        AND events.created_at < unixepoch(dates.day, '+1 day', '+3 hours')
-       GROUP BY dates.day
-       ORDER BY dates.day ASC`,
+         SUM(CASE WHEN event_name IN ('hero_instagram', 'gallery_instagram', 'contact_instagram') THEN 1 ELSE 0 END) AS instagram,
+         SUM(CASE WHEN event_name IN ('hero_maps', 'rating_maps', 'reviews_maps', 'contact_maps') THEN 1 ELSE 0 END) AS maps,
+         SUM(CASE WHEN event_name IN ('header_share', 'reviews_share') THEN 1 ELSE 0 END) AS shares
+       FROM analytics_events
+       WHERE created_at >= ? AND created_at < ?
+       GROUP BY day
+       ORDER BY day ASC`,
     )
-    .bind(firstDay, today);
+    .bind(since, until);
 
   const devicesStatement = env.DB
     .prepare(
@@ -192,7 +251,11 @@ export async function onRequestGet(context: FunctionContext) {
 
     return jsonResponse({
       generatedAt: new Date().toISOString(),
-      rangeDays: days,
+      period,
+      periodStart,
+      periodEnd,
+      today,
+      trackingStartDay,
       totals: {
         visits: Number(totals?.visits ?? 0),
         uniqueDevices: Number(totals?.unique_devices ?? 0),
@@ -206,16 +269,25 @@ export async function onRequestGet(context: FunctionContext) {
         shareVisitors: Number(totals?.share_visitors ?? 0),
         carouselInteractions: Number(totals?.carousel_interactions ?? 0),
       },
-      daily: (dailyResult.results as DailyRow[]).map((row) => ({
-        day: row.day,
-        visits: Number(row.visits ?? 0),
-        uniqueDevices: Number(row.unique_devices ?? 0),
-        whatsapp: Number(row.whatsapp ?? 0),
-        whatsappDevices: Number(row.whatsapp_devices ?? 0),
-        instagram: Number(row.instagram ?? 0),
-        maps: Number(row.maps ?? 0),
-        shares: Number(row.shares ?? 0),
-      })),
+      daily: (() => {
+        const rows = new Map((dailyResult.results as DailyRow[]).map((row) => [row.day, row]));
+
+        return periodBuckets(periodStart, periodEnd, period).map((day) => {
+          const row = rows.get(day);
+
+          return {
+            day,
+            status: bucketStatus(day, period, today),
+            visits: Number(row?.visits ?? 0),
+            uniqueDevices: Number(row?.unique_devices ?? 0),
+            whatsapp: Number(row?.whatsapp ?? 0),
+            whatsappDevices: Number(row?.whatsapp_devices ?? 0),
+            instagram: Number(row?.instagram ?? 0),
+            maps: Number(row?.maps ?? 0),
+            shares: Number(row?.shares ?? 0),
+          };
+        });
+      })(),
       devices: (devicesResult.results as GroupRow[]).map((row) => ({
         label: row.label,
         value: Number(row.value ?? 0),

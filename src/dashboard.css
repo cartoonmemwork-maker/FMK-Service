@@ -147,14 +147,21 @@
 .card-heading span { color: var(--blue-dark); font-size: 0.7rem; font-weight: 750; letter-spacing: 0.08em; text-transform: uppercase; }
 .card-heading h2 { margin: 0.35rem 0 0; font-size: clamp(1.35rem, 3vw, 1.9rem); letter-spacing: -0.045em; }
 .card-heading > p { margin: 0; color: var(--muted); font-size: 0.78rem; }
-.trend-scroll { overflow-x: auto; padding-bottom: 0.3rem; }
-.trend-chart { display: flex; height: 18rem; align-items: stretch; gap: 0.35rem; }
+.trend-period-picker { display: grid; justify-items: end; gap: 0.35rem; }
+.trend-period-picker label { color: var(--muted); font-size: 0.68rem; }
+.trend-period-picker select { min-width: 10rem; padding: 0.58rem 2.2rem 0.58rem 0.8rem; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--ink); font: inherit; font-size: 0.76rem; font-weight: 680; cursor: pointer; }
+.trend-scroll { overflow-x: auto; padding-bottom: 0.3rem; direction: ltr; }
+.trend-chart { display: flex; height: 18rem; flex-direction: row; align-items: stretch; gap: 0.35rem; direction: ltr; }
 .trend-column { display: grid; min-width: 1.65rem; flex: 1 0 1.65rem; grid-template-rows: 2.2rem 1fr 1.5rem; text-align: center; }
 .trend-values { display: flex; min-height: 2rem; align-items: center; justify-content: flex-end; font-size: 0.65rem; }
 .trend-values strong { color: var(--muted); font-weight: 650; }
 .trend-bar-track { position: relative; display: flex; overflow: hidden; align-items: flex-end; justify-content: center; border-radius: 0.45rem; background: #f0f0f2; }
 .trend-bar-track > span { width: 100%; border-radius: 0.45rem 0.45rem 0 0; background: linear-gradient(180deg, #6aa5ff, var(--blue)); transform-origin: bottom; animation: dashboard-bar-grow 420ms cubic-bezier(0.2, 0.75, 0.25, 1) both; }
 .trend-column time { padding-top: 0.45rem; color: var(--muted); font-size: 0.61rem; }
+.trend-column.is-untracked, .trend-column.is-future { opacity: 0.42; }
+.trend-column.is-untracked .trend-bar-track, .trend-column.is-future .trend-bar-track { background: #d7d8dc; }
+.trend-column.is-untracked .trend-bar-track > span, .trend-column.is-future .trend-bar-track > span { background: #aeb0b6; }
+.trend-note { margin: 0.8rem 0 0; color: var(--muted); font-size: 0.68rem; }
 
 .dashboard-columns { display: grid; margin-bottom: 1rem; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .progress-list { display: grid; gap: 1.2rem; }
@@ -220,6 +227,8 @@
   .metric-grid button, .metric-grid > article { min-height: 9.5rem; }
   .metric-grid > article:last-child:nth-child(odd) { grid-column: 1 / -1; }
   .card-heading { align-items: flex-start; flex-direction: column; gap: 1rem; }
+  .trend-period-picker { width: 100%; justify-items: stretch; }
+  .trend-period-picker select { width: 100%; }
   .actions-heading { align-items: flex-start; flex-direction: column; gap: 0.6rem; }
   .action-group summary { grid-template-columns: 1fr auto auto; }
   .dashboard-footer { padding: 1rem 0.25rem; align-items: flex-start; flex-direction: column; }

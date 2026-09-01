@@ -5,6 +5,7 @@ import './dashboard.css';
 type Metric = { label: string; value: number };
 type DailyMetric = {
   day: string;
+  status: 'active' | 'future' | 'untracked';
   visits: number;
   uniqueDevices: number;
   whatsapp: number;
@@ -15,10 +16,15 @@ type DailyMetric = {
 };
 type ChartMetric = 'visits' | 'uniqueDevices' | 'whatsapp' | 'instagram' | 'maps' | 'shares';
 type ConversionMetric = Extract<ChartMetric, 'whatsapp' | 'instagram' | 'maps' | 'shares'>;
+type Period = 'week' | 'month' | 'year';
 
 type DashboardData = {
   generatedAt: string;
-  rangeDays: number;
+  period: Period;
+  periodStart: string;
+  periodEnd: string;
+  today: string;
+  trackingStartDay: string;
   totals: {
     visits: number;
     uniqueDevices: number;
@@ -38,7 +44,11 @@ type DashboardData = {
   actions: Metric[];
 };
 
-const ranges = [7, 30, 90] as const;
+const periods = [
+  { id: 'week' as const, label: 'Semana' },
+  { id: 'month' as const, label: 'Mes' },
+  { id: 'year' as const, label: 'Año' },
+];
 
 const chartMetricLabels: Record<ChartMetric, string> = {
   visits: 'Visitas',
@@ -82,6 +92,76 @@ const deviceLabels: Record<string, string> = {
   tablet: 'Tablet',
 };
 
+function dateFromDay(day: string) {
+  return new Date(`${day}T12:00:00Z`);
+}
+
+function addCalendarDays(day: string, amount: number) {
+  const date = dateFromDay(day);
+  date.setUTCDate(date.getUTCDate() + amount);
+  return date.toISOString().slice(0, 10);
+}
+
+function addCalendarMonths(day: string, amount: number) {
+  const date = new Date(`${day.slice(0, 7)}-01T12:00:00Z`);
+  date.setUTCMonth(date.getUTCMonth() + amount);
+  return date.toISOString().slice(0, 10);
+}
+
+function startOfWeek(day: string) {
+  const date = dateFromDay(day);
+  date.setUTCDate(date.getUTCDate() - ((date.getUTCDay() + 6) % 7));
+  return date.toISOString().slice(0, 10);
+}
+
+function startOfPeriod(day: string, period: Period) {
+  if (period === 'week') return startOfWeek(day);
+  if (period === 'month') return `${day.slice(0, 7)}-01`;
+  return `${day.slice(0, 4)}-01-01`;
+}
+
+function nextPeriod(day: string, period: Period) {
+  if (period === 'week') return addCalendarDays(day, 7);
+  if (period === 'month') return addCalendarMonths(day, 1);
+  return `${Number(day.slice(0, 4)) + 1}-01-01`;
+}
+
+function capitalize(value: string) {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function formatPeriodOption(day: string, period: Period) {
+  const date = dateFromDay(day);
+
+  if (period === 'week') {
+    const end = dateFromDay(addCalendarDays(day, 6));
+    const startLabel = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(date);
+    const endLabel = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(end);
+    return `${startLabel} – ${endLabel}`;
+  }
+
+  if (period === 'month') {
+    return capitalize(new Intl.DateTimeFormat('es-AR', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(date));
+  }
+
+  return day.slice(0, 4);
+}
+
+function getPeriodOptions(period: Period, trackingStartDay: string, today: string) {
+  const current = startOfPeriod(today, period);
+  let cursor = startOfPeriod(trackingStartDay, period);
+  const options: Array<{ value: string; label: string }> = [];
+
+  if (cursor > current) cursor = current;
+
+  while (cursor <= current) {
+    options.push({ value: cursor, label: formatPeriodOption(cursor, period) });
+    cursor = nextPeriod(cursor, period);
+  }
+
+  return options.reverse();
+}
+
 function formatNumber(value: number) {
   return new Intl.NumberFormat('es-AR').format(value);
 }
@@ -124,24 +204,42 @@ function formatTrendValue(value: number) {
   return formatNumber(value);
 }
 
-function TrendChart({ data, metric }: { data: DailyMetric[]; metric: ChartMetric }) {
+function trendLabels(day: string, period: Period) {
+  const date = dateFromDay(day);
+
+  if (period === 'week') {
+    const weekday = new Intl.DateTimeFormat('es-AR', { weekday: 'long', timeZone: 'UTC' }).format(date);
+    return {
+      axis: capitalize(weekday),
+      title: `${capitalize(weekday)} ${new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'long', timeZone: 'UTC' }).format(date)}`,
+    };
+  }
+
+  if (period === 'month') {
+    const label = new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: '2-digit', timeZone: 'UTC' }).format(date);
+    return { axis: date.getUTCDay() === 1 ? label : '', title: label };
+  }
+
+  const month = new Intl.DateTimeFormat('es-AR', { month: 'short', timeZone: 'UTC' }).format(date).replace('.', '');
+  return { axis: capitalize(month), title: capitalize(month) };
+}
+
+function TrendChart({ data, metric, period }: { data: DailyMetric[]; metric: ChartMetric; period: Period }) {
   const values = data.map((item) => getTrendValue(item, metric));
   const maxValue = Math.max(1, ...values);
-  const labelStep = data.length > 45 ? 10 : data.length > 14 ? 5 : 1;
 
   return (
     <div className="trend-scroll">
       <div className="trend-chart" style={{ minWidth: `${Math.max(34, data.length * 2.1)}rem` }}>
         {data.map((item, index) => {
-          const date = new Date(`${item.day}T12:00:00`);
-          const label = new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: '2-digit' }).format(date);
+          const labels = trendLabels(item.day, period);
           const value = getTrendValue(item, metric);
 
           return (
             <div
-              className="trend-column"
+              className={`trend-column is-${item.status}`}
               key={item.day}
-              title={`${label}: ${formatTrendValue(value)} · ${chartMetricLabels[metric]}`}
+              title={`${labels.title}: ${formatTrendValue(value)} · ${chartMetricLabels[metric]}`}
             >
               <div className="trend-values">
                 <strong>{formatTrendValue(value)}</strong>
@@ -155,7 +253,7 @@ function TrendChart({ data, metric }: { data: DailyMetric[]; metric: ChartMetric
                   }}
                 />
               </div>
-              <time dateTime={item.day}>{index % labelStep === 0 ? label : ''}</time>
+              <time dateTime={item.day}>{labels.axis}</time>
             </div>
           );
         })}
@@ -240,7 +338,8 @@ function DashboardLogin({ onSuccess }: { onSuccess: () => Promise<void> }) {
 }
 
 export function AnalyticsDashboard() {
-  const [range, setRange] = useState<(typeof ranges)[number]>(30);
+  const [period, setPeriod] = useState<Period>('month');
+  const [anchor, setAnchor] = useState('');
   const [chartMetric, setChartMetric] = useState<ChartMetric>('visits');
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState('');
@@ -252,7 +351,9 @@ export function AnalyticsDashboard() {
     setError('');
 
     try {
-      const response = await fetch(`/estadisticas/data?days=${range}`, {
+      const query = new URLSearchParams({ period });
+      if (anchor) query.set('anchor', anchor);
+      const response = await fetch(`/estadisticas/data?${query.toString()}`, {
         credentials: 'same-origin',
         headers: { Accept: 'application/json' },
       });
@@ -272,7 +373,7 @@ export function AnalyticsDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [range]);
+  }, [anchor, period]);
 
   useEffect(() => {
     document.title = 'Estadísticas | FMK Service';
@@ -308,6 +409,10 @@ export function AnalyticsDashboard() {
     { id: 'maps' as const, label: 'Cómo llegar', value: formatNumber(data.totals.mapsClicks), detail: 'Clics en Maps' },
     { id: 'shares' as const, label: 'Compartidos', value: formatNumber(data.totals.shares), detail: 'Recomendaciones' },
   ] : [];
+
+  const periodOptions = useMemo(() => data
+    ? getPeriodOptions(period, data.trackingStartDay, data.today)
+    : [], [data, period]);
 
   const actions = useMemo(() => {
     const counts = new Map(data?.actions.map((item) => [item.label, item.value]) ?? []);
@@ -362,14 +467,17 @@ export function AnalyticsDashboard() {
             <span>Dispositivos mediante un código aleatorio local; sin cuentas, cookies ni direcciones IP.</span>
           </div>
           <div className="range-switch" role="group" aria-label="Seleccionar período">
-            {ranges.map((days) => (
+            {periods.map((option) => (
               <button
-                className={range === days ? 'is-active' : ''}
+                className={period === option.id ? 'is-active' : ''}
                 type="button"
-                key={days}
-                onClick={() => setRange(days)}
+                key={option.id}
+                onClick={() => {
+                  setAnchor('');
+                  setPeriod(option.id);
+                }}
               >
-                {days} días
+                {option.label}
               </button>
             ))}
           </div>
@@ -414,11 +522,23 @@ export function AnalyticsDashboard() {
             <div className="card-heading">
               <div>
                 <span>Tendencia</span>
-                <h2>{chartMetricLabels[chartMetric]} por día</h2>
+                <h2>{chartMetricLabels[chartMetric]} · {formatPeriodOption(data.periodStart, period)}</h2>
               </div>
-              <p>Seleccioná una tarjeta para cambiar el gráfico.</p>
+              <div className="trend-period-picker">
+                <label htmlFor="trend-period">Período del gráfico</label>
+                <select
+                  id="trend-period"
+                  onChange={(event) => setAnchor(event.target.value)}
+                  value={data.periodStart}
+                >
+                  {periodOptions.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <TrendChart data={data.daily} metric={chartMetric} />
+            <TrendChart data={data.daily} metric={chartMetric} period={period} />
+            <p className="trend-note">El gris indica períodos anteriores a la medición o que todavía no ocurrieron.</p>
           </section>
 
           <div className="dashboard-columns">
